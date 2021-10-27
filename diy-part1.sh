@@ -29,10 +29,6 @@ rm -rf  bin/targets/x86/64/openwrt-x86-64-generic.manifest
 rm -rf bin/targets/x86/64/sha256sums
 rm -rf  bin/targets/x86/64/version.buildinfo
 sleep 2
-mkdir -p files/etc/
-touch files/etc/lenyu_version
-lenyu_version=`date '+%y%m%d%H%M'`
-echo $lenyu_version  > files/etc/lenyu_version  
 rename_version=`cat files/etc/lenyu_version`
 str1=`grep "KERNEL_PATCHVER:="  target/linux/x86/Makefile | cut -d = -f 2` #判断当前默认内核版本号如5.10
 ver414=`grep "LINUX_VERSION-4.14 ="  include/kernel-version.mk | cut -d . -f 3`
