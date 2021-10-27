@@ -65,7 +65,7 @@ elif [ "$str1" = "5.10" ];then
 fi
 EOF
 
-cat>lenyu.sh<<-\EOF
+cat>lenyu.sh<<-\EOOF
 #!/bin/bash
 lenyu_version="`date '+%y%m%d%H%M'`_dev_Len yu" 
 echo $lenyu_version >  wget/DISTRIB_REVISION1 
@@ -94,7 +94,7 @@ if [ -s  " package/lean/default-settings/files/zzz-default-settings" ]; then
 		EOF
 	fi
 fi
-EOF
+EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
 #!/bin/bash
