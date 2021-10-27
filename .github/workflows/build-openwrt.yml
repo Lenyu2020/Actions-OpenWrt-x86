@@ -90,10 +90,10 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
         
-    - name: lenyu_files
-      run: |
-        cd openwrt 
-        bash lenyu_files.sh
+  #  - name: lenyu_files
+  #    run: |
+  #      cd openwrt 
+  #      bash lenyu_files.sh
    
     - name: lenyu
       run: |
