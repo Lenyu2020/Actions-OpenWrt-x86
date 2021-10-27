@@ -82,7 +82,15 @@ jobs:
        rm -rf luci-theme-argon  
        git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git
     
-    
+    - name: lenyu_files
+      run: |
+        cd openwrt 
+        bash lenyu_files.sh
+   
+    - name: lenyu
+      run: |
+        cd openwrt 
+        bash  lenyu.sh
     
     - name: Load custom feeds
       run: |
