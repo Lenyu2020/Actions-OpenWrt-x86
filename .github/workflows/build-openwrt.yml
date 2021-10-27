@@ -63,6 +63,27 @@ jobs:
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
+    - name: luci-app-openclash install
+      run: |
+        cd openwrt
+        mkdir package/luci-app-openclash
+        cd package/luci-app-openclash
+        git init
+        git remote add -f origin https://github.com/vernesong/OpenClash.git
+        git config core.sparsecheckout true
+        echo "luci-app-openclash" >> .git/info/sparse-checkout
+        git pull origin master
+        git branch --set-upstream-to=origin/master master
+    
+    - name: luci-theme-argon install
+      run: |
+       cd openwrt
+       cd package/lean  
+       rm -rf luci-theme-argon  
+       git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git
+    
+    
+    
     - name: Load custom feeds
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
@@ -121,6 +142,12 @@ jobs:
       with:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
+   
+    - name: delete files
+      run: |
+        cd openwrt 
+        bash  rename.sh
+    
 
     - name: Organize files
       id: organize
