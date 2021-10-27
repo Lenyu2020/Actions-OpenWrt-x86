@@ -25,6 +25,8 @@ touch files/etc/lenyu_version
 mkdir wget
 touch wget/DISTRIB_REVISION1
 touch wget/DISTRIB_REVISION3
+touch files/usr/share/Check_Update.sh
+touch files/usr/share/Lenyu-auto.sh
 exit 0
 EOF
 
