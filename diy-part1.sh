@@ -17,8 +17,6 @@ sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 
-cat>lenyu_files.sh<<-\EOF
-#!/bin/bash
 mkdir -p files/usr/share
 mkdir -p files/etc/
 touch files/etc/lenyu_version
@@ -27,8 +25,7 @@ touch wget/DISTRIB_REVISION1
 touch wget/DISTRIB_REVISION3
 touch files/usr/share/Check_Update.sh
 touch files/usr/share/Lenyu-auto.sh
-exit 0
-EOF
+
 
 cat>rename.sh<<-\EOF
 #!/bin/bash
