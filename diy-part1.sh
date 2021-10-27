@@ -18,12 +18,14 @@ echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.defau
 echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 
 cat>lenyu_files.sh<<-\EOF
+#!/bin/bash
 mkdir -p files/usr/share
 mkdir -p files/etc/
 touch files/etc/lenyu_version
 mkdir wget
 touch wget/DISTRIB_REVISION1
 touch wget/DISTRIB_REVISION3
+exit 0
 EOF
 
 cat>rename.sh<<-\EOF
