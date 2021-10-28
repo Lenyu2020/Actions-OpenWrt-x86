@@ -70,28 +70,26 @@ lenyu_version="`date '+%y%m%d%H%M'`_dev_Len yu"
 echo $lenyu_version >  wget/DISTRIB_REVISION1 
 echo $lenyu_version | cut -d _ -f 1 >  files/etc/lenyu_version  
 #######
-if [ -s  " package/lean/default-settings/files/zzz-default-settings" ]; then
-	new_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION1`
-	grep "DISTRIB_REVISION="  package/lean/default-settings/files/zzz-default-settings | cut -d \' -f 2 >  wget/DISTRIB_REVISION3
-	old_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION3`
-	sed -i "s/${old_DISTRIB_REVISION}/${new_DISTRIB_REVISION}/"   package/lean/default-settings/files/zzz-default-settings
-	#
-	grep "Check_Update.sh"  package/lean/default-settings/files/zzz-default-settings
-	if [ $? != 0 ]; then
-		sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
-		cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
-		sed -i '$ a alias lenyu="bash /usr/share/Check_Update.sh"' /etc/profile
-		exit 0
-		EOF
-	fi
-	grep "Lenyu-auto.sh"  package/lean/default-settings/files/zzz-default-settings
-	if [ $? != 0 ]; then
-		sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
-		cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
-		sed -i '$ a alias lenyu-auto="bash /usr/share/Lenyu-auto.sh"' /etc/profile
-		exit 0
-		EOF
-	fi
+new_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION1`
+grep "DISTRIB_REVISION="  package/lean/default-settings/files/zzz-default-settings | cut -d \' -f 2 >  wget/DISTRIB_REVISION3
+old_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION3`
+sed -i "s/${old_DISTRIB_REVISION}/${new_DISTRIB_REVISION}/"   package/lean/default-settings/files/zzz-default-settings
+#
+grep "Check_Update.sh"  package/lean/default-settings/files/zzz-default-settings
+if [ $? != 0 ]; then
+	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
+	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
+	sed -i '$ a alias lenyu="bash /usr/share/Check_Update.sh"' /etc/profile
+	exit 0
+	EOF
+fi
+grep "Lenyu-auto.sh"  package/lean/default-settings/files/zzz-default-settings
+if [ $? != 0 ]; then
+	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
+	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
+	sed -i '$ a alias lenyu-auto="bash /usr/share/Lenyu-auto.sh"' /etc/profile
+	exit 0
+	EOF
 fi
 EOOF
 
