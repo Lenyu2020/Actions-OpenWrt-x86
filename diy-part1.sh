@@ -95,8 +95,8 @@ EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
 #!/bin/bash
-# https://github.com/Lenyu2020/openwrt-update-script
-# openwrt-update-script By Lenyu 20210505
+# https://github.com/Lenyu2020/Actions-OpenWrt-x86
+# Actions-OpenWrt-x86 By Lenyu 20210505
 #path=$(dirname $(readlink -f $0))
 # cd ${path}
 #检测准备
@@ -109,16 +109,16 @@ fi
 rm -f /tmp/cloud_version
 # 获取固件云端版本号、内核版本号信息
 current_version=`cat /etc/lenyu_version`
-wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/openwrt-update-script/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
+wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/Actions-OpenWrt-x86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
 if [ -s  "/tmp/cloud_ts_version" ]; then
 	cloud_version=`cat /tmp/cloud_ts_version | cut -d _ -f 1`
 	cloud_kernel=`cat /tmp/cloud_ts_version | cut -d _ -f 2`
 	#固件下载地址
 	new_version=`cat /tmp/cloud_ts_version`
-	DEV_URL=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-	DEV_UEFI_URL=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-	openwrt_dev=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_dev.md5
-	openwrt_dev_uefi=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_dev_uefi.md5
+	DEV_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
+	DEV_UEFI_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
+	openwrt_dev=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev.md5
+	openwrt_dev_uefi=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev_uefi.md5
 else
 	echo "请检测网络，查看是否能打开谷歌！"
 	exit 1
@@ -241,8 +241,8 @@ EOF
 
 cat>files/usr/share/Lenyu-auto.sh<<-\EOF
 #!/bin/bash
-# https://github.com/Lenyu2020/openwrt-update-script
-# openwrt-update-script By Lenyu 20210505
+# https://github.com/Lenyu2020/Actions-OpenWrt-x86
+# Actions-OpenWrt-x86 By Lenyu 20210505
 #path=$(dirname $(readlink -f $0))
 # cd ${path}
 #检测准备
@@ -255,16 +255,16 @@ fi
 rm -f /tmp/cloud_version
 # 获取固件云端版本号、内核版本号信息
 current_version=`cat /etc/lenyu_version`
-wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/openwrt-update-script/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
+wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/Actions-OpenWrt-x86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
 if [ -s  "/tmp/cloud_ts_version" ]; then
 	cloud_version=`cat /tmp/cloud_ts_version | cut -d _ -f 1`
 	cloud_kernel=`cat /tmp/cloud_ts_version | cut -d _ -f 2`
 	#固件下载地址
 	new_version=`cat /tmp/cloud_ts_version`
-	DEV_URL=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-	DEV_UEFI_URL=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-	openwrt_dev=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_dev.md5
-	openwrt_dev_uefi=https://github.com/Lenyu2020/openwrt-update-script/releases/download/${new_version}/openwrt_dev_uefi.md5
+	DEV_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
+	DEV_UEFI_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
+	openwrt_dev=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev.md5
+	openwrt_dev_uefi=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev_uefi.md5
 else
 	echo "请检测网络，查看是否能打开谷歌！"
 	exit 1
