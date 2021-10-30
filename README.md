@@ -40,4 +40,4 @@ A template for building OpenWrt with GitHub Actions
 - [peter-evans/repository-dispatch](https://github.com/peter-evans/repository-dispatch)
 
 ## 欢迎加入讨论群
-- .[Openwrt_Share Group](https://t.me/openwrt_lede_v2ray_plugin)
+- .[点击加入"Openwrt_Share Group"群](https://t.me/openwrt_lede_v2ray_plugin)
