@@ -217,7 +217,7 @@ jobs:
         git -C openwrt/feeds/telephony log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
         git -C openwrt/feeds/helloworld log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
         git -C openwrt/feeds/passwall log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
-        git -C openwrt/package/lean/luci-app-openclash log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/package/luci-app-openclash log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
