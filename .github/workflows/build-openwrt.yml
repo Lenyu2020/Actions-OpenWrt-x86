@@ -23,7 +23,7 @@ on:
     
   schedule:
     - cron: 01 04 * * *
-    - cron: 12 06 * * *
+    - cron: 18 05 * * *
     
   
 env:
