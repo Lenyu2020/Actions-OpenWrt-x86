@@ -135,6 +135,7 @@ jobs:
       id: package
       run: |
         cd openwrt
+        echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #cache加速
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
