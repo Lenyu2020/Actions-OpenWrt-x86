@@ -208,7 +208,16 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "::set-output name=release_tag::$(cat /home/runner/work/Actions-OpenWrt-x86/Actions-OpenWrt-x86/openwrt/wget/op_version1)"
+        echo "::set-output name=release_tag::$(cat openwrt/wget/op_version1)"
+        echo "## Firmware Update Log" >> release.txt
+        git -C openwrt log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/packages log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/luci log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/routing log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/telephony log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/helloworld log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/feeds/passwall log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
+        git -C openwrt/package/lean/luci-app-openclash log --pretty=format:"%an:%s"  --graph --since=12.hour >> release.txt
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
