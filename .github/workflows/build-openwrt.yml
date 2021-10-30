@@ -22,8 +22,7 @@ on:
     types: started
     
   schedule:
-    - cron: 01 04 * * *
-    - cron: 18 05 * * *
+    - cron: 33 05 * * *
     
   
 env:
