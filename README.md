@@ -39,5 +39,5 @@ A template for building OpenWrt with GitHub Actions
 - [dev-drprasad/delete-older-releases](https://github.com/dev-drprasad/delete-older-releases)
 - [peter-evans/repository-dispatch](https://github.com/peter-evans/repository-dispatch)
 
-## Openwrt_Share Group
+## 欢迎加入讨论群
 - .[Openwrt_Share Group](https://t.me/openwrt_lede_v2ray_plugin)
