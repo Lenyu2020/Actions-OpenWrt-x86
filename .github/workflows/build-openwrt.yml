@@ -214,7 +214,7 @@ jobs:
         git -C openwrt/feeds/luci log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
         git -C openwrt/feeds/routing log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
         git -C openwrt/feeds/telephony log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/helloworld log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/helloworld log --pretty=format:"%s(#By %an)"  --graph --since=5.hour >> release.txt | cat release.txt >> openwrt/wget/release
         git -C openwrt/feeds/passwall log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
         git -C openwrt/package/luci-app-openclash log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
         if test ! -s openwrt/wget/release;then echo "* The source code is not updated" >> release.txt;fi
