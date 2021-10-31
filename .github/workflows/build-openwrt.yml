@@ -209,14 +209,14 @@ jobs:
       run: |
         echo "::set-output name=release_tag::$(cat openwrt/wget/op_version1)"
         echo "## Firmware Update Log" >> release.txt
-        git -C openwrt log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/packages log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/luci log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/routing log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/telephony log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/packages log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/luci log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/routing log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/telephony log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
         git -C openwrt/feeds/helloworld log --pretty=format:"%s(#By %an)"  --graph --since=5.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/feeds/passwall log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
-        git -C openwrt/package/luci-app-openclash log --pretty=format:"%s(#By %an)"  --graph --since=24.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/feeds/passwall log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
+        git -C openwrt/package/luci-app-openclash log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt | cat release.txt >> openwrt/wget/release
         if [[ ! -s  openwrt/wget/release ]];then echo -e "\n* The source code is not updated." >> release.txt;fi
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
