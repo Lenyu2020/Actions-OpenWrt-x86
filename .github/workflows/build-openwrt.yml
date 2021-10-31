@@ -18,11 +18,11 @@ on:
         description: 'SSH connection to Actions'
         required: false
         default: 'false'
-  watch:
-    types: started
+#  watch:
+#    types: started
     
-#  schedule:
-#    - cron: 00 22 * * *
+  schedule:
+     - cron: 00 22 * * *
     
   
 env:
