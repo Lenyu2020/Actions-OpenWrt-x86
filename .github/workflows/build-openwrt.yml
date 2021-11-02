@@ -215,7 +215,7 @@ jobs:
         git -C openwrt/feeds/passwall log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt 
         git -C openwrt/package/luci-app-openclash log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt 
         cat release.txt >> openwrt/wget/release || cat openwrt/release.txt >> openwrt/wget/release
-        if [ ! -s  openwrt/wget/release ];then echo -e "\n* The source code is not updated." >> release.txt;fi
+        test  -s openwrt/wget/release &&  echo -e "\n* The source code log is displayed." >> release.txt ||   echo -e "\n* The source code is not updated." >> release.txt
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
