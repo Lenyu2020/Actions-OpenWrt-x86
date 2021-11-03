@@ -212,7 +212,7 @@ jobs:
         git -C openwrt/feeds/telephony log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt
         git -C openwrt/feeds/helloworld log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt
         git -C openwrt/feeds/passwall log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt
-        git -C openwrt/package/luci-app-openc lash log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt
+        git -C openwrt/package/luci-app-openclash log --pretty=format:"%s(#By %an)"  --graph --since=3.hour >> release.txt
         cat release.txt
         test  -s release.txt &&  echo -e "\n* Source code update completed." >> release.txt || echo -e "\n* The source code is not updated." >> release.txt
         sed -i '1i ## Firmware Update Log' release.txt
