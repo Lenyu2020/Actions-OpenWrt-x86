@@ -1,0 +1,113 @@
+#
+# Copyright (c) 2019-2021 smallprogram
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/smallprogram/OpenWrtAction
+# File: .github/workflows/Update_Checker.yml
+# Description: Source code update checker
+#
+
+name: Update_Checker
+
+env:
+
+  REPO_URL_Lede: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH_Lede: master
+  REPO_PATH_Lede : "lede"
+  
+  REPO_URL_HelloWorld: https://github.com/fw876/helloworld
+  REPO_BRANCH_HelloWorld: master
+  REPO_PATH_HelloWorld : "helloworld"
+
+  REPO_URL_PassWall: https://github.com/xiaorouji/openwrt-passwall
+  REPO_BRANCH_PassWall: main
+  REPO_PATH_PassWall : "openwrt-passwall"
+
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+  schedule:
+    - cron: 0 */1 * * *
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: SSH connection to Actions
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
+    - name: Get Commit Hash
+      id: getHash
+      run: |
+      
+        git clone --depth 1 $REPO_URL_Lede -b $REPO_BRANCH_Lede $REPO_PATH_Lede
+        cd $REPO_PATH_Lede
+        echo "::set-output name=commitHash_Lede::$(git rev-parse HEAD)"
+        cd
+
+        git clone --depth 1 $REPO_URL_HelloWorld -b $REPO_BRANCH_HelloWorld $REPO_PATH_HelloWorld 
+        cd $REPO_PATH_HelloWorld
+        echo "::set-output name=commitHash_HelloWorld::$(git rev-parse HEAD)"
+        cd
+
+        git clone --depth 1 $REPO_URL_PassWall -b $REPO_BRANCH_PassWall $REPO_PATH_PassWall
+        cd $REPO_PATH_PassWall
+        echo "::set-output name=commitHash_PassWall::$(git rev-parse HEAD)"
+        cd
+        
+    - name: Show Commit Head and Combination Heads
+      id: combHeader
+      run: |
+        echo "commitHash_Lede: ${{ steps.getHash.outputs.commitHash_Lede }}"
+        echo "commitHash_HelloWorld: ${{ steps.getHash.outputs.commitHash_HelloWorld }}"
+        echo "commitHash_PassWall: ${{ steps.getHash.outputs.commitHash_PassWall }}"
+        echo "::set-output name=commitHash_All::\
+          ${{steps.getHash.outputs.commitHash_Lede}}\
+          ${{steps.getHash.outputs.commitHash_HelloWorld}}\
+          ${{steps.getHash.outputs.commitHash_PassWall}}"
+
+    - name: Compare Commit Hash
+      id: cacheHash
+      uses: actions/cache@v2
+      with:
+        path: .commitHash_All
+        key: HEAD-${{ steps.combHeader.outputs.commitHash_All }}
+   
+
+    - name: Save New Commit Hash
+      if: steps.cacheHash.outputs.cache-hit != 'true'
+      run: |
+        echo ${{ steps.getHash.outputs.commitHash_Lede }} | tee .commitHash_Lede
+        echo ${{ steps.getHash.outputs.commitHash_HelloWorld }} | tee .commitHash_HelloWorld
+        echo ${{ steps.getHash.outputs.commitHash_PassWall }} | tee .commitHash_PassWall
+        echo ${{ steps.combHeader.outputs.commitHash_All }} | tee .commitHash_All   
+        
+    - name: Trigger build
+      if: steps.cacheHash.outputs.cache-hit != 'true'
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.OPENWRTACTION_TRIGGER }}
+        event-type: OpenWrt Related Code Updates
+
+    - name: Delete workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        retain_days: 1
+        keep_minimum_runs: 2
+        
