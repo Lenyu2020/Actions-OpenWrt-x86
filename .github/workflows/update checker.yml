@@ -12,7 +12,6 @@
 name: Update_Checker
 
 env:
-
   REPO_URL_Lede: https://github.com/coolsnowwolf/lede
   REPO_BRANCH_Lede: master
   REPO_PATH_Lede : "lede"
@@ -100,6 +99,7 @@ jobs:
       if: steps.cacheHash.outputs.cache-hit != 'true'
       uses: peter-evans/repository-dispatch@v1
       with:
+        repository: github.repository
         token: ${{ secrets.ACTIONS_TRIGGER_PAT }}
         event-type: OpenWrt Related Code Updates
 
