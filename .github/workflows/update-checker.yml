@@ -99,6 +99,7 @@ jobs:
       if: steps.cacheHash.outputs.cache-hit != 'true'
       uses: peter-evans/repository-dispatch@v1
       with:
+        repository: Lenyu2020/Actions-OpenWrt-x86/blob/main/.github/workflows/build-openwrt.yml
         token: ${{ secrets.ACTIONS_TRIGGER_PAT }}
         event-type: Source Code Update
 
