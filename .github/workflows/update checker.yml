@@ -99,7 +99,6 @@ jobs:
       if: steps.cacheHash.outputs.cache-hit != 'true'
       uses: peter-evans/repository-dispatch@v1
       with:
-        repository: github.repository
         token: ${{ secrets.ACTIONS_TRIGGER_PAT }}
         event-type: OpenWrt Related Code Updates
 
