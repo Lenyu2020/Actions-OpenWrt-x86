@@ -12,6 +12,10 @@ A template for building OpenWrt with GitHub Actions
 
 - P3TERX
 - smallprogram
+- coolsnowwolf
+- xiaorouji
+- vernesong
+- ...
 
 
 ## 欢迎加入讨论群
