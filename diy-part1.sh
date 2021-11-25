@@ -125,7 +125,7 @@ if [ -s  "/tmp/cloud_ts_version" ]; then
 	openwrt_sta=https://github.com/Blueplanet20120/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_sta.md5
 	openwrt_sta_uefi=https://github.com/Blueplanet20120/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_sta_uefi.md5
 else
-	echo "请检测网络，查看是否能打开谷歌！"
+	echo "请检测网络或重试！"
 	exit 1
 fi
 ####
@@ -271,7 +271,7 @@ if [ -s  "/tmp/cloud_ts_version" ]; then
 	openwrt_sta=https://github.com/Blueplanet20120/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_sta.md5
 	openwrt_sta_uefi=https://github.com/Blueplanet20120/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_sta_uefi.md5
 else
-	echo "请检测网络，查看是否能打开谷歌！"
+	echo "请检测网络或重试！"
 	exit 1
 fi
 ####
