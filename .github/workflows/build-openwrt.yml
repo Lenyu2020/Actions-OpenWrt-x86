@@ -70,8 +70,8 @@ jobs:
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
-       ccache: 'false' #'true'
-       clean:  'true'  # 'false'
+       ccache: 'true' #'true'
+       clean:  'false'  # 'false'
        prefix: ${{ github.workspace }}/openwrt
     
     - name: luci-app-openclash install
@@ -132,7 +132,7 @@ jobs:
       id: package
       run: |
         cd openwrt
-        #echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
+        echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
