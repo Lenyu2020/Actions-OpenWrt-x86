@@ -70,7 +70,7 @@ jobs:
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
-       ccache: 'true'
+       ccache: 'falseh #'true'
        clean:  'false'  # 'false'
        prefix: ${{ github.workspace }}/openwrt
     
