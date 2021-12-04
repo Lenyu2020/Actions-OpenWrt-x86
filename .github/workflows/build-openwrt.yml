@@ -71,8 +71,8 @@ jobs:
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
-       ccache: 'false'
-       clean:  'true'  # 'false'
+       ccache: 'true'
+       clean:  'false'  # 'false'
        prefix: ${{ github.workspace }}/openwrt
     
     - name: luci-theme-argon install
