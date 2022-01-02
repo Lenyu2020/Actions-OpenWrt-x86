@@ -70,8 +70,8 @@ jobs:
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
-       ccache: 'true' #'true'
-       clean:  'false'  # 'false'
+       ccache: 'false' #'true'
+       clean:  'true'  # 'false'
        prefix: ${{ github.workspace }}/openwrt
     
     - name: luci-app-openclash install
