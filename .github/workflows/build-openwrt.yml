@@ -70,7 +70,7 @@ jobs:
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
-       ccache: 'true' #'true' 默认值
+       ccache: 'false' #'true' 默认值
        #清空缓存
        clean:  'true'  # 'false' 默认值
        #是否缓存工具链目录
