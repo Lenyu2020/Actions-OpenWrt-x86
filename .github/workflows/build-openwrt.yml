@@ -73,10 +73,6 @@ jobs:
        ccache: 'false' #'true' 默认值
        #清空缓存
        clean:  'true'  # 'false' 默认值
-       #是否缓存工具链目录
-       toolchain: 'false' #'true' 默认值
-       #是否跳过工具链编译
-       skip: 'false' #'true' 默认值
        prefix: ${{ github.workspace }}/openwrt
     
     - name: luci-app-openclash install
@@ -137,7 +133,7 @@ jobs:
       id: package
       run: |
         cd openwrt
-        #echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
+        echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
