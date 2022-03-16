@@ -106,15 +106,6 @@ jobs:
       run: |
         cd openwrt 
         bash  lenyu.sh
-        
-    - name: passwall-luci
-      run: |
-        cd openwrt 
-        wget -P package https://codeload.github.com/xiaorouji/openwrt-passwall/zip/refs/heads/luci -O package/luci-passwall
-        chmod +x package/luci-passwall
-        unzip -d package/ package/luci-passwall
-        mv package/openwrt-passwall-luci/luci-app-passwall/ package/
-        rm -rf package/luci-passwall package/openwrt-passwall-luci
 
 
     - name: Update feeds
