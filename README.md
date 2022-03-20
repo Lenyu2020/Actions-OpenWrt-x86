@@ -15,6 +15,7 @@ A template for building OpenWrt with GitHub Actions
 - coolsnowwolf
 - xiaorouji
 - vernesong
+- kenzok8
 - ...
 
 
