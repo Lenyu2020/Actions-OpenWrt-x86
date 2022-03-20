@@ -87,11 +87,10 @@ jobs:
         git pull origin master
         git branch --set-upstream-to=origin/master master
     
-    - name: luci-theme-argon install
+    - name: aliyundrive-webda
       run: |
        cd openwrt
-       cd package
-       git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git
+       git clone https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webda
     
     
     - name: Load custom feeds
