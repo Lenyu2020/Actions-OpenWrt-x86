@@ -87,11 +87,10 @@ jobs:
         git pull origin master
         git branch --set-upstream-to=origin/master master
     
-    - name: Install jell source
-      run: |
-       cd openwrt
-       git clone https://github.com/kenzok8/jell.git package/jell
-       mv -f package/jell/* package/
+    #- name: Install jell source
+      #run: |
+       #cd openwrt
+       #git clone https://github.com/kenzok8/jell.git package/jell
     
     - name: Load custom feeds
       run: |
