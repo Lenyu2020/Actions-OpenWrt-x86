@@ -91,6 +91,7 @@ jobs:
       run: |
        cd openwrt
        git clone https://github.com/kenzok8/jell.git package/jell
+       mv -f package/jell/* package/
     
     - name: Load custom feeds
       run: |
