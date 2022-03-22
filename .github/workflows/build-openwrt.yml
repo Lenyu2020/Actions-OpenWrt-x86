@@ -96,7 +96,7 @@ jobs:
         mv package/openwrt-passwall-luci/luci-app-passwall/ package/
         rm -rf package/luci-passwall package/openwrt-passwall-luci
        
-    - name: passwall-luci
+    - name: aliyundrive-webdav
       run: |
         cd openwrt/package 
         git clone https://github.com/messense/aliyundrive-webdav.git
