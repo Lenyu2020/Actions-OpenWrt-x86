@@ -87,10 +87,24 @@ jobs:
         git pull origin master
         git branch --set-upstream-to=origin/master master
     
-    #- name: Install jell source
-      #run: |
-       #cd openwrt
-       #git clone https://github.com/kenzok8/jell.git package/jell
+    - name: passwall-luci
+      run: |
+        cd openwrt 
+        wget -P package https://codeload.github.com/xiaorouji/openwrt-passwall/zip/refs/heads/luci -O package/luci-passwall
+        chmod +x package/luci-passwall
+        unzip -d package/ package/luci-passwall
+		    mv package/openwrt-passwall-luci/luci-app-passwall/ package/
+		   rm -rf package/luci-passwall package/openwrt-passwall-luci
+       
+   - name: passwall-luci
+      run: |
+       cd openwrt/package 
+       git clone https://github.com/messense/aliyundrive-webdav.git
+       
+   - name: luci-app-frpc
+      run: |
+        cd openwrt/package 
+        git clone https://github.com/kuoruan/luci-app-frpc.git
     
     - name: Load custom feeds
       run: |
