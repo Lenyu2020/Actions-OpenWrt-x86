@@ -90,7 +90,7 @@ jobs:
     - name: luci-theme-argonn
       run: |
         cd openwrt/package 		
-        git clone https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
+        git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
         
     - name: aliyundrive-webdav
       run: |
