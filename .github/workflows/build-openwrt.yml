@@ -86,15 +86,6 @@ jobs:
         echo "luci-app-openclash" >> .git/info/sparse-checkout
         git pull --depth 1 origin master
         git branch --set-upstream-to=origin/master 
-    
-    - name: passwall-luci
-      run: |
-        cd openwrt 
-        wget -P package https://codeload.github.com/xiaorouji/openwrt-passwall/zip/refs/heads/luci -O package/luci-passwall
-        chmod +x package/luci-passwall
-        unzip -d package/ package/luci-passwall
-        mv package/openwrt-passwall-luci/luci-app-passwall/ package/
-        rm -rf package/luci-passwall package/openwrt-passwall-luci
        
     - name: aliyundrive-webdav
       run: |
