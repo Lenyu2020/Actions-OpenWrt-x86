@@ -86,7 +86,12 @@ jobs:
         echo "luci-app-openclash" >> .git/info/sparse-checkout
         git pull --depth 1 origin master
         git branch --set-upstream-to=origin/master 
-       
+    
+    - name: luci-theme-argonn
+      run: |
+        cd openwrt/package 		
+        git clone https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
+        
     - name: aliyundrive-webdav
       run: |
         cd openwrt/package 
