@@ -73,7 +73,7 @@ jobs:
       uses: klever1988/cachewrtbuild@main
       with:
        ccache: 'true'
-       clean:  'true'  # 'false'
+       clean:  'false'  # 'false'
        prefix: ${{ github.workspace }}/openwrt
     
     
@@ -119,7 +119,7 @@ jobs:
       id: package
       run: |
         cd openwrt
-        #echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
+        echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config #Cache.Speedup
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
