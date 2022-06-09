@@ -25,10 +25,10 @@ env:
   REPO_PATH_PassWall : "openwrt-passwall"
 
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: 0 */1 * * *
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    - cron: 0 */1 * * *
 
 jobs:
   check:
