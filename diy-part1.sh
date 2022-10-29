@@ -89,7 +89,7 @@ grep "Check_Update.sh"  package/lean/default-settings/files/zzz-default-settings
 if [ $? != 0 ]; then
 	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
 	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
-	sed -i '$ a alias lenyu="bash /usr/share/Check_Update.sh"' /etc/profile
+	sed -i '$ a alias lenyu="sh /usr/share/Check_Update.sh"' /etc/profile
 	exit 0
 	EOF
 fi
@@ -97,7 +97,7 @@ grep "Lenyu-auto.sh"  package/lean/default-settings/files/zzz-default-settings
 if [ $? != 0 ]; then
 	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
 	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
-	sed -i '$ a alias lenyu-auto="bash /usr/share/Lenyu-auto.sh"' /etc/profile
+	sed -i '$ a alias lenyu-auto="sh /usr/share/Lenyu-auto.sh"' /etc/profile
 	exit 0
 	EOF
 fi
