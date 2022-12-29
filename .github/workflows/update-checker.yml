@@ -42,17 +42,17 @@ jobs:
       
         git clone --depth 1 $REPO_URL_Lede -b $REPO_BRANCH_Lede $REPO_PATH_Lede
         cd $REPO_PATH_Lede
-        echo "::set-output name=commitHash_Lede::$(git rev-parse HEAD)"
+        echo "commitHash_Lede=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd
 
         git clone --depth 1 $REPO_URL_HelloWorld -b $REPO_BRANCH_HelloWorld $REPO_PATH_HelloWorld 
         cd $REPO_PATH_HelloWorld
-        echo "::set-output name=commitHash_HelloWorld::$(git rev-parse HEAD)"
+        echo "commitHash_HelloWorld=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd
 
         git clone --depth 1 $REPO_URL_PassWall -b $REPO_BRANCH_PassWall $REPO_PATH_PassWall
         cd $REPO_PATH_PassWall
-        echo "::set-output name=commitHash_PassWall::$(git rev-parse HEAD)"
+        echo "commitHash_PassWall2=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd
         
     - name: Show Commit Head and Combination Heads
@@ -61,14 +61,14 @@ jobs:
         echo "commitHash_Lede: ${{ steps.getHash.outputs.commitHash_Lede }}"
         echo "commitHash_HelloWorld: ${{ steps.getHash.outputs.commitHash_HelloWorld }}"
         echo "commitHash_PassWall: ${{ steps.getHash.outputs.commitHash_PassWall }}"
-        echo "::set-output name=commitHash_All::\
+        echo "commitHash_All=\
           ${{steps.getHash.outputs.commitHash_Lede}}\
           ${{steps.getHash.outputs.commitHash_HelloWorld}}\
           ${{steps.getHash.outputs.commitHash_PassWall}}"
 
     - name: Compare Commit Hash
       id: cacheHash
-      uses: actions/cache@v2
+      uses: actions/cache@v3.0.11
       with:
         path: .commitHash_All
         key: HEAD-${{ steps.combHeader.outputs.commitHash_All }}
@@ -90,7 +90,7 @@ jobs:
         event-type: Source Code Update
 
     - name: Delete workflow runs
-      uses: GitRML/delete-workflow-runs@main
+      uses: Lenyu2020/delete-workflow-runs@main
       with:
         retain_days: 1
         keep_minimum_runs: 1
