@@ -71,7 +71,7 @@ elif [ "$str1" = "6.1" ];then
   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver61}_uefi-gpt_dev_Lenyu.img.gz
    fi
 fi
-ls bin/targets/x86/64 | grep "_Lenyu.img" | cut -d - -f 3 | cut -d _ -f 1-2 > wget/op_version1
+ls bin/targets/x86/64 | grep "gpt_dev_Lenyu.img" | cut -d - -f 3 | cut -d _ -f 1-2 > wget/op_version1
 #md5
 ls -l  "bin/targets/x86/64" | awk -F " " '{print $9}' > wget/open_dev_md5
 dev_version=`grep "_uefi-gpt_dev_Lenyu.img.gz" wget/open_dev_md5 | cut -d - -f 3 | cut -d _ -f 1-2`
