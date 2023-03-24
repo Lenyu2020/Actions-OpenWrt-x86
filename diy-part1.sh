@@ -99,6 +99,7 @@ if [ $? != 0 ]; then
 	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
 	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
 	sed -i '$ a alias lenyu="sh /usr/share/Check_Update.sh"' /etc/profile
+	chmod 755 /etc/init.d/romupdate
 	exit 0
 	EOF
 fi
@@ -107,6 +108,7 @@ if [ $? != 0 ]; then
 	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
 	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
 	sed -i '$ a alias lenyu-auto="sh /usr/share/Lenyu-auto.sh"' /etc/profile
+	chmod 755 /etc/init.d/romupdate
 	exit 0
 	EOF
 fi
