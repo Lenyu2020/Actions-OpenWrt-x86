@@ -92,8 +92,8 @@ jobs:
     
     - name: luci-app-romupdate
       run: |
-        cd openwrt/package
-        git clone https://github.com/Blueplanet20120/luci-app-romupdate.git
+        cd openwrt/package    
+        git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
     
     - name: luci-theme-argonn
       run: |
