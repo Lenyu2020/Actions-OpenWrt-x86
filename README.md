@@ -7,8 +7,13 @@
 ![GitHub Forks](https://img.shields.io/github/forks/P3TERX/Actions-OpenWrt.svg?style=flat-square&label=Forks&logo=github)
 
 A template for building OpenWrt with GitHub Actions
-* Connect to the router ssh and run the lenyu or lenyu-auto command to automatically detect and update the firmware
-* It can be added to the router's scheduled tasks to achieve fully automated firmware update
+
+Main features:
+1. Firmware can be automatically updated;
+2. Automatic updates have a luci interface to facilitate online firmware updates for everyone.
+3. Luci plugin features:
+   a. Scheduled and manual updates are available
+   b. Local and cloud firmware version numbers can be viewed.
 
 ## Thanks
 
