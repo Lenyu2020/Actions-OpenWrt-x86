@@ -12,6 +12,7 @@ Main features:
 1. Firmware can be automatically updated;
 2. Automatic updates have a luci interface to facilitate online firmware updates for everyone.
 3. Luci plugin features:
+   
    a. Scheduled and manual updates are available
    
    b. Local and cloud firmware version numbers can be viewed.
