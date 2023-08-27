@@ -61,7 +61,12 @@ jobs:
         swap-storage: true
         
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v3.1.0  
+      
+    - name: Disk space
+      run: |
+           echo "Free space:"
+           df -h
 
     - name: Initialization environment
       env:
