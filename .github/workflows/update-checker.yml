@@ -21,7 +21,7 @@ env:
   REPO_PATH_HelloWorld : "helloworld"
 
   REPO_URL_PassWall: https://github.com/xiaorouji/openwrt-passwall
-  REPO_BRANCH_PassWall: packages
+  REPO_BRANCH_PassWall: main
   REPO_PATH_PassWall : "openwrt-passwall"
 
 
