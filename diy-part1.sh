@@ -26,6 +26,22 @@ touch wget/DISTRIB_REVISION3
 touch files/usr/share/Check_Update.sh
 touch files/usr/share/Lenyu-auto.sh
 
+# backup config
+cat>> package/base-files/files/lib/upgrade/keep.d/base-files-essential<<-EOF
+/etc/config/dhcp
+/etc/config/xray
+/etc/config/sing-box
+/etc/config/romupdate
+/etc/config/passwall_show
+/etc/config/passwall_server
+/etc/config/passwall
+/usr/share/v2ray/geosite.dat
+/usr/share/v2ray/geoip.dat
+/usr/share/passwall/rules/
+/usr/share/singbox/
+/usr/share/v2ray/
+EOF
+
 
 cat>rename.sh<<-\EOF
 #!/bin/bash
