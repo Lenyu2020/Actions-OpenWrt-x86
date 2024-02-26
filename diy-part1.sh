@@ -40,6 +40,7 @@ cat>> package/base-files/files/lib/upgrade/keep.d/base-files-essential<<-EOF
 /usr/share/passwall/rules/
 /usr/share/singbox/
 /usr/share/v2ray/
+/etc/openclash/core/
 EOF
 
 
