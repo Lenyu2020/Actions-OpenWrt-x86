@@ -66,13 +66,6 @@ jobs:
       run: |
         echo ${{ steps.combHeader.outputs.commitHash_All }} | tee .commitHash_All   
         
-    - name: Trigger build
-      if: steps.cacheHash.outputs.cache-hit != 'true'
-      uses: peter-evans/repository-dispatch@v3
-      with:
-        token: ${{ secrets.ACTIONS_TRIGGER_PAT }}
-        event-type: Source Code Update
-
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
       with:
