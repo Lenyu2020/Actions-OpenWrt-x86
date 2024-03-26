@@ -29,9 +29,6 @@ jobs:
         cd lede
         echo "SHA_01=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
-
-
-        
         git clone https://github.com/fw876/helloworld --filter=blob:none
         cd helloworld
         echo "SHA_02=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
