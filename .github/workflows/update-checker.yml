@@ -29,18 +29,27 @@ jobs:
         cd lede
         echo "SHA_01=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
-        git clone https://github.com/fw876/helloworld --filter=blob:none
-        cd helloworld
+
+        git clone https://github.com/coolsnowwolf/packages --filter=blob:none
+        cd packages
         echo "SHA_02=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
-        git clone https://github.com/xiaorouji/openwrt-passwall --filter=blob:none
-        cd openwrt-passwall
+
+        git clone https://github.com/coolsnowwolf/luci --filter=blob:none
+        cd luci
         echo "SHA_03=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
-        git clone  https://github.com/vernesong/OpenClash.git --filter=blob:none
-        cd OpenClash
-        echo "SHA_04=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        
+        git clone https://github.com/fw876/helloworld --filter=blob:none
+        cd helloworld
+        echo "SHA_06=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
+
+        git clone https://github.com/xiaorouji/openwrt-passwall --filter=blob:none
+        cd openwrt-passwall
+        echo "SHA_08=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        cd
+
     - name: Show Commit Head and Combination Heads
       id: combHeader
       run: |
@@ -48,7 +57,8 @@ jobs:
           ${{steps.getHash.outputs.SHA_01}}\
           ${{steps.getHash.outputs.SHA_02}}\
           ${{steps.getHash.outputs.SHA_03}}\
-          ${{steps.getHash.outputs.SHA_04}}" >> $GITHUB_OUTPUT
+          ${{steps.getHash.outputs.SHA_04}}\
+          ${{steps.getHash.outputs.SHA_05}}" >> $GITHUB_OUTPUT
 
     - name: Compare Commit Hash
       id: cacheHash
@@ -61,7 +71,7 @@ jobs:
     - name: Save New Commit Hash
       if: steps.cacheHash.outputs.cache-hit != 'true'
       run: |
-        echo ${{ steps.combHeader.outputs.commitHash_All }} | tee .commitHash_All   
+        echo ${{ steps.combHeader.outputs.commitHash_All }} | tee .commitHash_All
         
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
@@ -70,6 +80,7 @@ jobs:
           repository: ${{ github.repository }}
           retain_days: 1
           keep_minimum_runs: 3
+
     - name: Remove old Releases
       uses: dev-drprasad/delete-older-releases@master
       with:
@@ -86,3 +97,4 @@ jobs:
       with:
         token: ${{ secrets.ACTIONS_TRIGGER_PAT }}
         event-type: openwrt_source_update
+
