@@ -42,12 +42,12 @@ jobs:
         
         git clone https://github.com/fw876/helloworld --filter=blob:none
         cd helloworld
-        echo "SHA_06=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "SHA_04=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
 
         git clone https://github.com/xiaorouji/openwrt-passwall --filter=blob:none
         cd openwrt-passwall
-        echo "SHA_08=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "SHA_05=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         cd
 
     - name: Show Commit Head and Combination Heads
