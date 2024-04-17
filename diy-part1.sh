@@ -29,7 +29,6 @@ touch files/usr/share/Lenyu-auto.sh
 # backup config
 cat>> package/base-files/files/lib/upgrade/keep.d/base-files-essential<<-EOF
 /etc/config/dhcp
-/etc/config/xray
 /etc/config/sing-box
 /etc/config/romupdate
 /etc/config/passwall_show
@@ -129,6 +128,26 @@ if [ $? != 0 ]; then
 	exit 0
 	EOF
 fi
+grep "xray_backup"  package/lean/default-settings/files/zzz-default-settings
+if [ $? != 0 ]; then
+	sed -i 's/exit 0/ /' package/lean/default-settings/files/zzz-default-settings
+	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
+		cat> /etc/rc.local<<-EOFF
+		# Put your custom commands here that should be executed once
+		# the system init finished. By default this file does nothing.
+		if [ -f "/etc/xray_backup/xray_backup" ]; then
+		cp -f /etc/xray_backup/xray_backup /usr/bin/xray
+		# chmod +x /usr/bin/xray
+		# Check if the copy operation was successful
+		  if [ $? -eq 0 ]; then
+			 touch /tmp/xray_succ.log
+		  fi
+		rm -rf  /etc/xray_backup/xray_backup
+		fi
+		exit 0
+		EOFF
+		exit 0
+	EOF
 EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
@@ -291,6 +310,13 @@ if [ ! -f  "/etc/lenyu_version" ]; then
 	exit 0
 fi
 rm -f /tmp/cloud_version
+
+# 备份backup-passwall中的xray文件
+if [ ! -d "/etc/xray_backup" ]; then
+    mkdir /etc/xray_backup
+fi
+cp -f /usr/bin/xray /etc/xray_backup/xray_backup
+
 # 获取固件云端版本号、内核版本号信息
 current_version=`cat /etc/lenyu_version`
 wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/Actions-OpenWrt-x86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
