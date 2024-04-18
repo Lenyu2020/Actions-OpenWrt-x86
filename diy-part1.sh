@@ -130,7 +130,7 @@ if [ $? != 0 ]; then
 fi
 grep "xray_backup"  package/lean/default-settings/files/zzz-default-settings
 if [ $? != 0 ]; then
-	sed -i 's/exit 0/ /' package/lean/default-settings/files/zzz-default-settings
+	sed -i 's/exit 0/ /'  package/lean/default-settings/files/zzz-default-settings
 	cat>> package/lean/default-settings/files/zzz-default-settings<<-EOF
 		cat> /etc/rc.local<<-EOFF
 		# Put your custom commands here that should be executed once
@@ -148,6 +148,7 @@ if [ $? != 0 ]; then
 		EOFF
 		exit 0
 	EOF
+fi
 EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
