@@ -148,7 +148,6 @@ if [ $? != 0 ]; then
 		EOFF
 		exit 0
 	EOF
-EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
 #!/bin/bash
