@@ -111,10 +111,10 @@ jobs:
         cd openwrt/package    
         git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
     
-    - name: luci-theme-design
-      run: |
-        cd openwrt/package 		
-        git clone https://github.com/gngpp/luci-theme-design.git luci-theme-design
+    #- name: luci-theme-design
+      #run: |
+       # cd openwrt/package 		
+        #git clone https://github.com/gngpp/luci-theme-design.git luci-theme-design
         
     - name: aliyundrive-webdav
       run: |
