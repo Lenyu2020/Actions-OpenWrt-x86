@@ -111,10 +111,10 @@ jobs:
         cd openwrt/package    
         git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
     
-    #- name: luci-theme-design
-      #run: |
-       # cd openwrt/package 		
-        #git clone https://github.com/gngpp/luci-theme-design.git luci-theme-design
+    - name: luci-theme-argonn
+      run: |
+        cd openwrt/package 		
+        git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
         
     - name: aliyundrive-webdav
       run: |
@@ -126,10 +126,10 @@ jobs:
         cd openwrt/package 
         git clone https://github.com/kuoruan/luci-app-frpc.git
         
-    #- name: luci-app-adguardhome
-      #run: |
-         #cd openwrt/package 
-         #git clone https://github.com/uamrws/luci-app-adguardhome.git
+    - name: luci-theme-argonn
+      run: |
+         cd openwrt/package 
+         git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
     
     - name: Load custom feeds
       run: |
