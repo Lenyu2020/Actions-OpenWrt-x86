@@ -127,11 +127,6 @@ jobs:
         cd openwrt/package 
         git clone https://github.com/kuoruan/luci-app-frpc.git
         
-    - name: luci-theme-argonn
-      run: |
-         cd openwrt/package 
-         git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argonn
-    
     - name: Load custom feeds
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
