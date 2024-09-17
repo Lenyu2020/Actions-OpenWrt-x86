@@ -36,8 +36,10 @@ cat>> package/base-files/files/lib/upgrade/keep.d/base-files-essential<<-EOF
 /etc/config/passwall_show
 /etc/config/passwall_server
 /etc/config/passwall
-/usr/share/v2ray/geosite.dat
-/usr/share/v2ray/geoip.dat
+/usr/bin/chinadns-ng
+/usr/bin/sing-box
+/usr/bin/xray
+/usr/bin/hysteria
 /usr/share/passwall/rules/
 /usr/share/singbox/
 /usr/share/v2ray/
