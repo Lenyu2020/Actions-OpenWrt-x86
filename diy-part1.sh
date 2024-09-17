@@ -409,6 +409,7 @@ TEMP_DIR="/tmp/test"
 PSVERSION_FILE="/usr/share/psversion"
 RED='\033[0;31m'    # Red color
 BLUE='\033[0;34m'   # Blue color
+ORANGE='\033[0;33m' # Orange color
 NC='\033[0m'        # No Color (reset)
 
 # Echo message in red color
@@ -419,6 +420,11 @@ echo_red() {
 # Echo message in blue color
 echo_blue() {
   echo -e "${BLUE}$1${NC}"
+}
+
+# Echo message in orange color
+echo_orange() {
+  echo -e "${ORANGE}$1${NC}"
 }
 
 # Preparing for update (blue message)
@@ -439,7 +445,8 @@ version=$(echo "$latest_release" | grep '"tag_name":' | sed -E 's/.*"tag_name": 
 luci_app_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-23.05_luci-app-passwall_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
 luci_i18n_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-23.05_luci-i18n-passwall-zh-cn_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
 
-# Get installed version from the system
+# Get installed version from the system and save to psversion file
+opkg list-installed | grep luci-app-passwall | awk '{print $3}' > "$PSVERSION_FILE"
 installed_version=$(cat "$PSVERSION_FILE" 2>/dev/null)
 
 # Check if the version is already up to date
@@ -448,8 +455,18 @@ if [ "$installed_version" = "$version" ]; then
   exit 0
 fi
 
-# If versions do not match, continue with the update
-echo "新版本可用，开始更新..."
+# If versions do not match, prompt user for confirmation
+echo_orange "你即将更新passwall为最新版本：$version，确定更新吗？(回车默认y，否则输入n)"
+read -r confirmation
+confirmation=${confirmation:-y}
+
+if [ "$confirmation" != "y" ]; then
+  echo_blue "已取消更新。"
+  exit 0
+fi
+
+# If user confirms, continue with the update
+echo_blue "新版本可用，开始更新..."
 
 # Download files to the temporary directory
 wget -O "$TEMP_DIR/luci-23.05_luci-app-passwall_${version}_all.ipk" "$luci_app_passwall_url"
