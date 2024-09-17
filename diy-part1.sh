@@ -29,21 +29,23 @@ touch files/usr/share/Lenyu-auto.sh
 touch files/usr/share/Lenyu-pw.sh
 
 # backup config
-cat>> package/base-files/files/lib/upgrade/keep.d/base-files-essential<<-EOF
+cat>>/etc/sysupgrade.conf<<-EOF
 /etc/config/dhcp
 /etc/config/sing-box
 /etc/config/romupdate
 /etc/config/passwall_show
 /etc/config/passwall_server
 /etc/config/passwall
+/usr/share/passwall/rules/
+/usr/share/singbox/
+/usr/share/v2ray/
+/etc/openclash/core/
 /usr/bin/chinadns-ng
 /usr/bin/sing-box
 /usr/bin/hysteria
-/usr/share/passwall/rules/
-/usr/share/singbox/
+/usr/bin/xray
 /usr/share/v2ray/geoip.dat
 /usr/share/v2ray/geosite.dat
-/etc/openclash/core/
 EOF
 
 
