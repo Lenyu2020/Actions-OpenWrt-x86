@@ -455,9 +455,9 @@ if [ "$installed_version" = "$version" ]; then
   exit 0
 fi
 
-# If versions do not match, prompt user for confirmation
-echo_orange "你即将更新passwall为最新版本：$version，确定更新吗？(回车默认y，否则输入n)"
-read -r confirmation
+# If versions do not match, prompt user for confirmation with a 10-second countdown
+echo_orange "你即将更新passwall为最新版本：$version，确定更新吗？(回车默认y，10秒后自动执行y)"
+read -t 10 -r confirmation
 confirmation=${confirmation:-y}
 
 if [ "$confirmation" != "y" ]; then
