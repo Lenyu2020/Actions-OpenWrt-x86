@@ -25,6 +25,7 @@ CONFIG_PACKAGE_bzip2=y
 CONFIG_PACKAGE_coreutils-nohup=y
 CONFIG_PACKAGE_coreutils-stat=y
 CONFIG_PACKAGE_coreutils-stty=y
+CONFIG_PACKAGE_coreutils-timeout=y
 CONFIG_PACKAGE_frpc=y
 CONFIG_PACKAGE_frps=y
 CONFIG_PACKAGE_haproxy=y
@@ -101,12 +102,13 @@ CONFIG_PACKAGE_libwebsockets-full=y
 CONFIG_PACKAGE_libyaml=y
 CONFIG_PACKAGE_libzstd=y
 CONFIG_PACKAGE_lsblk=y
+CONFIG_PACKAGE_luci-app-aliyundrive-webdav=y
 # CONFIG_PACKAGE_luci-app-arpbind is not set
-# CONFIG_PACKAGE_luci-app-ddns is not set
 CONFIG_PACKAGE_luci-app-diskman=y
 CONFIG_PACKAGE_luci-app-diskman_INCLUDE_btrfs_progs=y
 CONFIG_PACKAGE_luci-app-diskman_INCLUDE_lsblk=y
 # CONFIG_PACKAGE_luci-app-filetransfer is not set
+CONFIG_PACKAGE_luci-app-netdata=y
 # CONFIG_PACKAGE_luci-app-nlbwmon is not set
 CONFIG_PACKAGE_luci-app-nps=y
 CONFIG_PACKAGE_luci-app-openclash=y
@@ -127,8 +129,10 @@ CONFIG_PACKAGE_luci-app-ttyd=y
 CONFIG_PACKAGE_luci-app-wireguard=y
 # CONFIG_PACKAGE_luci-app-wol is not set
 CONFIG_PACKAGE_luci-app-zerotier=y
+CONFIG_PACKAGE_luci-i18n-aliyundrive-webdav-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-bonding-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y
+CONFIG_PACKAGE_luci-i18n-netdata-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-nps-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-romupdate-zh-cn=y
@@ -140,10 +144,12 @@ CONFIG_PACKAGE_luci-lib-xterm=y
 CONFIG_PACKAGE_luci-newapi=y
 CONFIG_PACKAGE_luci-proto-bonding=y
 CONFIG_PACKAGE_luci-proto-wireguard=y
+CONFIG_PACKAGE_luci-theme-argon=y
 CONFIG_PACKAGE_luci-theme-argonn=y
 CONFIG_PACKAGE_mount-utils=y
 CONFIG_PACKAGE_naiveproxy=y
 CONFIG_PACKAGE_nano=y
+CONFIG_PACKAGE_netdata=y
 CONFIG_PACKAGE_npc=y
 CONFIG_PACKAGE_parted=y
 CONFIG_PACKAGE_proto-bonding=y
