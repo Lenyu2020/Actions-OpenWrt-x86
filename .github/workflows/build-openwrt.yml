@@ -111,11 +111,11 @@ jobs:
         cd openwrt/package    
         git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
     
-    - name: luci-theme-argon
-      run: |
-        cd openwrt/package/lean
-        rm -rf luci-theme-argon
-        git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
+    #- name: luci-theme-argon
+      #run: |
+        #cd openwrt/package/lean
+        #rm -rf luci-theme-argon
+        #git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
         
     - name: aliyundrive-webdav
       run: |
