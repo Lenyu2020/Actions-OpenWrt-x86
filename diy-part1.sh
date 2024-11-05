@@ -259,11 +259,9 @@ case $num1 in
 	echo
 	sleep 3
 	if [ ! -d /sys/firmware/efi ];then
-		gzip -d openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-		sysupgrade /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img
+		sysupgrade /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz		
 	else
-		gzip -d openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-		sysupgrade /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img
+		sysupgrade /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
 	fi
     ;;
     n|N)
@@ -272,11 +270,9 @@ case $num1 in
     echo
     sleep 3
 	if [ ! -d /sys/firmware/efi ];then
-		gzip -d openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-		sysupgrade -n  /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img
+		sysupgrade -n  /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
 	else
-		gzip -d openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-		sysupgrade -n  /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img
+		sysupgrade -n  /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
 	fi
     ;;
     *)
@@ -375,8 +371,7 @@ if [ ! -d /sys/firmware/efi ];then
 		  sleep 4
 		  exit
 		fi
-		gzip -d /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-		sysupgrade /tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img
+		sysupgrade tmp/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
 	else
 		echo -e "\033[32m 本地已经是最新版本，还更个鸡巴毛啊… \033[0m"
 		echo
@@ -392,8 +387,7 @@ else
 			sleep 1
 			exit
 		fi
-		gzip -d /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-		sysupgrade /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img
+		sysupgrade /tmp/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
 	else
 		echo -e "\033[32m 本地已经是最新版本，还更个鸡巴毛啊… \033[0m"
 		echo
