@@ -421,23 +421,28 @@ echo_orange() {
 
 # Preparing for update (blue message)
 echo_blue "正在做更新前的准备工作..."
-# 下载 unzip 包
-echo "开始下载 unzip 包..."
-wget -q --show-progress "$UNZIP_URL" -O "$UNZIP_PACKAGE"
-
-# 检查下载是否成功
-if [ $? -eq 0 ]; then
-    echo "下载成功，开始安装 unzip 包..."
-    opkg install "$UNZIP_PACKAGE" 2>/dev/null
-    
-    # 检查安装是否成功
-    if [ $? -eq 0 ]; then
-        echo "unzip 安装成功！"
-    else
-        echo "unzip 安装失败！"
-    fi
+# 检查 unzip 是否已安装
+if opkg list-installed | grep -q unzip; then
+    echo "unzip 已经安装，跳过安装步骤。"
 else
-    echo "unzip 下载失败！"
+    # 下载 unzip 包
+    echo "开始下载 unzip 包..."
+    wget -q --show-progress "$UNZIP_URL" -O "$UNZIP_PACKAGE"
+
+    # 检查下载是否成功
+    if [ $? -eq 0 ]; then
+        echo "下载成功，开始安装 unzip 包..."
+        opkg install "$UNZIP_PACKAGE"
+        
+        # 检查安装是否成功
+        if [ $? -eq 0 ]; then
+            echo "unzip 安装成功！"
+        else
+            echo "unzip 安装失败！"
+        fi
+    else
+        echo "unzip 下载失败！"
+    fi
 fi
 # Create temporary directory
 mkdir -p "$TEMP_DIR"
@@ -499,6 +504,7 @@ echo_blue "插件已安装并且passwall服务已重启。"
 rm -rf $TEMP_DIR
 
 exit 0
+
 EOF
 
 
