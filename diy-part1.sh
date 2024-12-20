@@ -397,6 +397,8 @@ cat>files/usr/share/Lenyu-pw.sh<<-\EOF
 # Define variables
 TEMP_DIR="/tmp/test"
 PSVERSION_FILE="/usr/share/psversion"
+UNZIP_URL="https://downloads.openwrt.org/releases/packages-23.05/x86_64/packages/unzip_6.0-8_x86_64.ipk"
+UNZIP_PACKAGE="unzip_6.0-8_x86_64.ipk"
 RED='\033[0;31m'    # Red color
 BLUE='\033[0;34m'   # Blue color
 ORANGE='\033[0;33m' # Orange color
@@ -419,9 +421,24 @@ echo_orange() {
 
 # Preparing for update (blue message)
 echo_blue "正在做更新前的准备工作..."
-opkg update >/dev/null 2>&1
-opkg install unzip >/dev/null 2>&1
+# 下载 unzip 包
+echo "开始下载 unzip 包..."
+wget -q --show-progress "$UNZIP_URL" -O "$UNZIP_PACKAGE"
 
+# 检查下载是否成功
+if [ $? -eq 0 ]; then
+    echo "下载成功，开始安装 unzip 包..."
+    opkg install "$UNZIP_PACKAGE" 2>/dev/null
+    
+    # 检查安装是否成功
+    if [ $? -eq 0 ]; then
+        echo "unzip 安装成功！"
+    else
+        echo "unzip 安装失败！"
+    fi
+else
+    echo "unzip 下载失败！"
+fi
 # Create temporary directory
 mkdir -p "$TEMP_DIR"
 
