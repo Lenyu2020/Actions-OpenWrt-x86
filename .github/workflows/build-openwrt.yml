@@ -66,12 +66,12 @@ jobs:
            df -h
 
     - name: Initialization environment
-	    env:
+      env:
         DEBIAN_FRONTEND: noninteractive
 	  run: |
 		# 启用 Universe 和 Multiverse 仓库
 		sudo apt-get update
-		sudo apt-get install -y software-properties-common
+                sudo apt-get install -y software-properties-common
 		sudo add-apt-repository universe
 		sudo add-apt-repository multiverse
 		
