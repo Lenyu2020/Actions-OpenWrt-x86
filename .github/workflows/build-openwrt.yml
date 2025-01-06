@@ -65,98 +65,19 @@ jobs:
            echo "Free space:"
            df -h
 
-    - name: Initialize environment
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
-          # 清理旧的源列表和 dotnet, android 等目录
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-
-          # 更新APT源列表
-          sudo apt-get -qq update || { echo "APT update failed"; exit 1; }
-
-          # 升级已安装的软件包
-          sudo apt-get -qq full-upgrade || { echo "APT upgrade failed"; exit 1; }
-
-          # 安装依赖的软件包
-          sudo apt-get -qq install \
-            ack \
-            antlr3 \
-            asciidoc \
-            autoconf \
-            automake \
-            autopoint \
-            binutils \
-            bison \
-            build-essential \
-            bzip2 \
-            ccache \
-            cmake \
-            cpio \
-            curl \
-            device-tree-compiler \
-            fastjar \
-            flex \
-            gawk \
-            gettext \
-            gcc-multilib \
-            g++-multilib \
-            git \
-            gperf \
-            haveged \
-            help2man \
-            intltool \
-            libc6-dev-i386 \
-            libelf-dev \
-            libglib2.0-dev \
-            libgmp3-dev \
-            libltdl-dev \
-            libmpc-dev \
-            libmpfr-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libreadline-dev \
-            libssl-dev \
-            libtool \
-            lrzsz \
-            mkisofs \
-            msmtp \
-            nano \
-            ninja-build \
-            p7zip \
-            p7zip-full \
-            patch \
-            pkgconf \
-            python3 \
-            python3-pyelftools \
-            libpython3-dev \
-            qemu-utils \
-            rsync \
-            scons \
-            squashfs-tools \
-            subversion \
-            swig \
-            texinfo \
-            uglifyjs \
-            upx-ucl \
-            unzip \
-            vim \
-            wget \
-            xmlto \
-            xxd \
-            zlib1g-dev || { echo "APT install failed"; exit 1; }
-
-          # 移除不再需要的包
-          sudo apt-get -qq autoremove --purge || { echo "APT autoremove failed"; exit 1; }
-
-          # 清理APT缓存
-          sudo apt-get -qq clean || { echo "APT clean failed"; exit 1; }
-
-          # 设置时区
-          sudo timedatectl set-timezone "$TZ"
-
-          # 创建工作目录
-          sudo mkdir -p /workdir
-          sudo chown $USER:$GROUPS /workdir
-
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq full-upgrade
+        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pyelftools libpython3-dev qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
 
 
         
@@ -331,8 +252,8 @@ jobs:
         test  ! -s release.txt && echo -e "\n* The source code is not updated." >> release.txt
         sed -i '1i ## Firmware Update Log' release.txt
         touch release.txt
-        [ $UPLOAD_COWTRANSFER = true ] && echo "?? [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
-        [ $UPLOAD_WETRANSFER = true ] && echo "?? [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
