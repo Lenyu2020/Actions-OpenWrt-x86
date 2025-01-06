@@ -65,7 +65,7 @@ jobs:
            echo "Free space:"
            df -h
 
-	- name: Initialize environment
+    - name: Initialize environment
 	  run: |
 		  # 清理旧的源列表和 dotnet, android 等目录
 		  sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
