@@ -444,31 +444,42 @@ else
         echo "unzip 下载失败！"
     fi
 fi
+
 # Create temporary directory
 mkdir -p "$TEMP_DIR"
 
 # Get the latest release information from GitHub
 latest_release=$(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest)
 
-# Extract version number from GitHub release
+# Extract version number from GitHub release (例如 "25.3.9-1")
 version=$(echo "$latest_release" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
 
-# Extract download URLs
-luci_app_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-23.05_luci-app-passwall_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
-luci_i18n_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-23.05_luci-i18n-passwall-zh-cn_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
 
-# Get installed version from the system and save to psversion file
+# Extract download URLs
+luci_app_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-24.10_luci-app-passwall_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
+luci_i18n_passwall_url=$(echo "$latest_release" | grep -o '"browser_download_url": "[^"]*luci-24.10_luci-i18n-passwall-zh-cn_[^"]*"' | sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/')
+
+# 获取文件名（例如 luci-24.10_luci-app-passwall_25.3.9-r1_all.ipk）
+app_file=$(basename "$luci_app_passwall_url")
+i18n_file=$(basename "$luci_i18n_passwall_url")
+
+# 从 app_file 中提取版本号部分，即 "25.3.9-r1"
+version2410=$(echo "$app_file" | sed -E 's/^luci-24\.10_luci-app-passwall_([^_]+)_all\.ipk$/\1/')
+echo_blue "最新云端版本号：$version2410"
+
+# 将当前安装的版本写入 psversion 文件
 opkg list-installed | grep luci-app-passwall | awk '{print $3}' > "$PSVERSION_FILE"
 installed_version=$(cat "$PSVERSION_FILE" 2>/dev/null)
+echo_blue "最新本地版本号：$installed_version"
 
-# Check if the version is already up to date
-if [ "$installed_version" = "$version" ]; then
+# 检查版本是否已经是最新的，比较时使用 version2410 变量
+if [ "$installed_version" = "$version2410" ]; then
   echo_red "已经是最新版本，还更新个鸡毛啊！"
   exit 0
 fi
 
-# If versions do not match, prompt user for confirmation with a 10-second countdown
-echo_orange "你即将更新passwall为最新版本：$version，确定更新吗？(y/n,回车默认y，10秒后自动执行y)"
+# 如果版本不一致，提示用户确认（10秒倒计时，默认 y）
+echo_orange "你即将更新 passwall 为最新版本：$version2410，确定更新吗？(y/n, 回车默认y，10秒后自动执行y)"
 read -t 10 -r confirmation
 confirmation=${confirmation:-y}
 
@@ -477,33 +488,36 @@ if [ "$confirmation" != "y" ]; then
   exit 0
 fi
 
-# If user confirms, continue with the update
+# 用户确认后继续更新
 echo_blue "新版本可用，开始更新..."
 
-# Download files to the temporary directory
-wget -O "$TEMP_DIR/luci-23.05_luci-app-passwall_${version}_all.ipk" "$luci_app_passwall_url"
-wget -O "$TEMP_DIR/luci-23.05_luci-i18n-passwall-zh-cn_${version}_all.ipk" "$luci_i18n_passwall_url"
+# 下载文件到临时目录（保持原文件名）
+wget -O "$TEMP_DIR/$app_file" "$luci_app_passwall_url"
+wget -O "$TEMP_DIR/$i18n_file" "$luci_i18n_passwall_url"
 sleep 5
 echo "下载完成:"
-echo "$TEMP_DIR/luci-23.05_luci-app-passwall_${version}_all.ipk"
-echo "$TEMP_DIR/luci-23.05_luci-i18n-passwall-zh-cn_${version}_all.ipk"
+echo "$TEMP_DIR/$app_file"
+echo "$TEMP_DIR/$i18n_file"
 
-# Install the downloaded IPK files
-opkg install "$TEMP_DIR/luci-23.05_luci-app-passwall_${version}_all.ipk"
-opkg install "$TEMP_DIR/luci-23.05_luci-i18n-passwall-zh-cn_${version}_all.ipk"
+# 安装下载的 IPK 包
+sleep 1
+/etc/init.d/passwall stop
+opkg install "$TEMP_DIR/$app_file" --force-overwrite
+opkg install "$TEMP_DIR/$i18n_file" --force-overwrite
 
-# Restart the passwall service
+# 重启 passwall 服务
 /etc/init.d/passwall restart
 
-# Update the version file with the new version
-echo "$version" > "$PSVERSION_FILE"
+# 将新版本号（version2410）写入 psversion 文件
+echo "$version2410" > "$PSVERSION_FILE"
 
-echo_blue "插件已安装并且passwall服务已重启。"
+echo_blue "插件已安装并且 passwall 服务已重启。"
 
-# Clean up
-rm -rf $TEMP_DIR
+# 清理临时目录
+rm -rf "$TEMP_DIR"
 
 exit 0
+
 
 EOF
 
