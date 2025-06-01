@@ -95,6 +95,14 @@ elif [ "$str1" = "6.6" ];then
   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}_dev_Lenyu.img.gz
   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}_uefi-gpt_dev_Lenyu.img.gz
    fi
+elif [ "$str1" = "6.12" ];then
+  if [ ! $ver612 ]; then
+  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}0_dev_Lenyu.img.gz
+  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}0_uefi-gpt_dev_Lenyu.img.gz
+ else
+  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}_dev_Lenyu.img.gz
+  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}_uefi-gpt_dev_Lenyu.img.gz
+   fi
 fi
 ls bin/targets/x86/64 | grep "gpt_dev_Lenyu.img" | cut -d - -f 3 | cut -d _ -f 1-2 > wget/op_version1
 #md5
