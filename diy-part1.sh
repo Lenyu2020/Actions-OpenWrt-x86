@@ -51,69 +51,58 @@ EOF
 
 cat>rename.sh<<-\EOF
 #!/bin/bash
-rm -rf  bin/targets/x86/64/config.buildinfo
-rm -rf  bin/targets/x86/64/feeds.buildinfo
-rm -rf  bin/targets/x86/64/openwrt-x86-64-generic-kernel.bin
-rm -rf  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.vmdk
-rm -rf  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.vmdk
-rm -rf  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-rootfs.img.gz
-rm -rf  bin/targets/x86/64/openwrt-x86-64-generic.manifest
+
+# 清理旧文件
+rm -rf bin/targets/x86/64/config.buildinfo
+rm -rf bin/targets/x86/64/feeds.buildinfo
+rm -rf bin/targets/x86/64/openwrt-x86-64-generic-kernel.bin
+rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.vmdk
+rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.vmdk
+rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-rootfs.img.gz
+rm -rf bin/targets/x86/64/openwrt-x86-64-generic.manifest
 rm -rf bin/targets/x86/64/sha256sums
-rm -rf  bin/targets/x86/64/version.buildinfo
+rm -rf bin/targets/x86/64/version.buildinfo
 sleep 2
-rename_version=`cat files/etc/lenyu_version`
-str1=`grep "KERNEL_PATCHVER:="  target/linux/x86/Makefile | cut -d = -f 2` #判断当前默认内核版本号如5.10
-#ver414=`grep "LINUX_VERSION-4.14 ="  include/kernel-4.14 | cut -d . -f 3`
-#ver419=`grep "LINUX_VERSION-4.19 ="  include/kernel-4.19 | cut -d . -f 3`
-ver54=`grep "LINUX_VERSION-5.4 ="  include/kernel-5.4 | cut -d . -f 3`
-ver510=`grep "LINUX_VERSION-5.10 ="  include/kernel-5.10 | cut -d . -f 3`
-ver515=`grep "LINUX_VERSION-5.15 ="  include/kernel-5.15 | cut -d . -f 3`
-ver61=`grep "LINUX_VERSION-6.1 ="  include/kernel-6.1 | cut -d . -f 3`
-ver66=`grep "LINUX_VERSION-6.6 ="  include/kernel-6.6 | cut -d . -f 3`
-ver612=`grep "LINUX_VERSION-6.12 ="  include/kernel-6.12 | cut -d . -f 3`
-if [ "$str1" = "5.4" ];then
-   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver54}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver54}_uefi-gpt_dev_Lenyu.img.gz
-elif [ "$str1" = "5.10" ];then
-   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver510}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver510}_uefi-gpt_dev_Lenyu.img.gz
-elif [ "$str1" = "5.15" ];then
-   mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver515}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver515}_uefi-gpt_dev_Lenyu.img.gz
-elif [ "$str1" = "6.1" ];then
-  if [ ! $ver66 ]; then
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver61}0_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver61}0_uefi-gpt_dev_Lenyu.img.gz
- else
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver61}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver61}_uefi-gpt_dev_Lenyu.img.gz
-   fi 
-elif [ "$str1" = "6.6" ];then
-  if [ ! $ver66 ]; then
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}0_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}0_uefi-gpt_dev_Lenyu.img.gz
- else
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver66}_uefi-gpt_dev_Lenyu.img.gz
-   fi
-elif [ "$str1" = "6.12" ];then
-  if [ ! $ver612 ]; then
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}0_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}0_uefi-gpt_dev_Lenyu.img.gz
- else
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz       bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}_dev_Lenyu.img.gz
-  mv  bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz   bin/targets/x86/64/openwrt_x86-64-${rename_version}_${str1}.${ver612}_uefi-gpt_dev_Lenyu.img.gz
-   fi
+
+# 读取版本号与内核补丁版本
+rename_version=$(cat files/etc/lenyu_version)
+str1=$(grep "KERNEL_PATCHVER:=" target/linux/x86/Makefile | cut -d '=' -f2)
+
+# 动态获取补丁小版本
+kernel_include_file="include/kernel-${str1}"
+if [ -f "$kernel_include_file" ]; then
+    ver=$(grep "LINUX_VERSION-${str1} =" "$kernel_include_file" | cut -d '.' -f3)
+else
+    ver=""
 fi
-ls bin/targets/x86/64 | grep "gpt_dev_Lenyu.img" | cut -d - -f 3 | cut -d _ -f 1-2 > wget/op_version1
-#md5
-ls -l  "bin/targets/x86/64" | awk -F " " '{print $9}' > wget/open_dev_md5
-dev_version=`grep "_uefi-gpt_dev_Lenyu.img.gz" wget/open_dev_md5 | cut -d - -f 3 | cut -d _ -f 1-2`
+
+# 定义源镜像和目标名称前缀
+src_img=bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz
+src_efi=bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz
+base="openwrt_x86-64-${rename_version}_${str1}.${ver}"
+
+# 重命名镜像，添加存在性检查
+if [ -f "$src_img" ] && [ -f "$src_efi" ]; then
+    mv "$src_img"   "bin/targets/x86/64/${base}_dev_Lenyu.img.gz"
+    mv "$src_efi"   "bin/targets/x86/64/${base}_uefi-gpt_dev_Lenyu.img.gz"
+else
+    echo "镜像文件不存在，无法重命名：$src_img 或 $src_efi"
+fi
+
+# 生成版本列表
+ls bin/targets/x86/64 | grep "gpt_dev_Lenyu.img" | cut -d '-' -f3 | cut -d '_' -f1-2 > wget/op_version1
+
+# 生成 MD5 列表
+ls -1 bin/targets/x86/64 > wget/open_dev_md5
+dev_version=$(grep "_uefi-gpt_dev_Lenyu.img.gz" wget/open_dev_md5 | cut -d '-' -f3 | cut -d '_' -f1-2)
 openwrt_dev=openwrt_x86-64-${dev_version}_dev_Lenyu.img.gz
 openwrt_dev_uefi=openwrt_x86-64-${dev_version}_uefi-gpt_dev_Lenyu.img.gz
-cd bin/targets/x86/64
-md5sum $openwrt_dev > openwrt_dev.md5
-md5sum $openwrt_dev_uefi > openwrt_dev_uefi.md5
+
+# 切换目录并生成 MD5 文件
+cd bin/targets/x86/64 || exit 1
+md5sum "$openwrt_dev" > openwrt_dev.md5
+md5sum "$openwrt_dev_uefi" > openwrt_dev_uefi.md5
+
 exit 0
 EOF
 
