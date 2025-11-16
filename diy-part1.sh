@@ -505,13 +505,13 @@ wget -O "$TEMP_DIR/$app_file" "$luci_app_passwall_url" || { echo_red "主程序�
 wget -O "$TEMP_DIR/$i18n_file" "$luci_i18n_passwall_url" || { echo_red "中文包下载失败"; exit 1; }
 
 ########################################
-# 6. 安装前隐藏自定义规则（安静模式核心）
+# 6. 备份自定义规则
 ########################################
-echo_blue "临时隐藏你的自定义规则（避免 opkg 提示）..."
+echo_blue "备份你的自定义规则..."
 
 mkdir -p "$RULE_BACKUP"
 for f in direct_host direct_ip proxy_host; do
-  [ -f "$RULE_DIR/$f" ] && mv "$RULE_DIR/$f" "$RULE_BACKUP/$f" 2>/dev/null || true
+  [ -f "$RULE_DIR/$f" ] && cp "$RULE_DIR/$f" "$RULE_BACKUP/$f" 2>/dev/null || true
 done
 
 ########################################
@@ -532,20 +532,22 @@ for table in passwall passwall_chn passwall_geo passwall1; do
 done
 
 ########################################
-# 9. 安装 Passwall（不会提示 conffile）
+# 9. 安装 Passwall（保留自定义配置）
 ########################################
-echo_blue "安装新版本..."
+echo_blue "安装新版本（保留你的自定义配置）..."
 
-opkg install "$TEMP_DIR/$app_file" --force-overwrite --force-reinstall
-opkg install "$TEMP_DIR/$i18n_file" --force-overwrite --force-reinstall
+# 使用 --force-overwrite 和 --force-reinstall，但不使用 --force-maintainer
+# 这样会保留用户修改的配置文件
+opkg install "$TEMP_DIR/$app_file" --force-overwrite --force-reinstall 2>&1 | grep -v "Not deleting modified conffile" || true
+opkg install "$TEMP_DIR/$i18n_file" --force-overwrite --force-reinstall 2>&1 | grep -v "Not deleting modified conffile" || true
 
 ########################################
-# 10. 恢复你的自定义规则（安静模式核心）
+# 10. 恢复你的自定义规则
 ########################################
 echo_blue "恢复你的自定义规则..."
 
 for f in direct_host direct_ip proxy_host; do
-  [ -f "$RULE_BACKUP/$f" ] && mv "$RULE_BACKUP/$f" "$RULE_DIR/$f" 2>/dev/null || true
+  [ -f "$RULE_BACKUP/$f" ] && cp "$RULE_BACKUP/$f" "$RULE_DIR/$f" 2>/dev/null || true
 done
 
 ########################################
