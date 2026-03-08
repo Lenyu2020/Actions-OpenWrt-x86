@@ -41,7 +41,7 @@ jobs:
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
-        root-reserve-mb: 6144
+        root-reserve-mb: 20480  # 将根分区保留空间从 6144 (6GB) 修改为 20480 (20GB)
         swap-size-mb: 10240
         remove-dotnet: 'true'
         remove-android: 'true'
