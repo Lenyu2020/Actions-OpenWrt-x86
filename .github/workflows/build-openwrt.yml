@@ -36,10 +36,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    # 【核心优化】设置全局默认工作目录为挂载的大容量分区
-    defaults:
-      run:
-        working-directory: /workdir/openwrt
 
     steps:
     - name: Maximize Build Space
@@ -54,17 +50,18 @@ jobs:
         remove-docker-images: 'true'
         build-mount-path: '/workdir'
 
-    # 将你的私有配置脚本（如 diy.sh, lenyu.sh）单独 Checkout 到 main-repo 文件夹
+    # 将自身仓库配置拉取到 main-repo
     - name: Checkout
       uses: actions/checkout@v4
       with:
         path: main-repo
 
+    # 此时依然在系统默认环境运行
     - name: Check initial disk space
       run: df -hT
 
+    # 初始化环境
     - name: Initialization environment
-      working-directory: /
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -74,6 +71,7 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo chown -R $USER:$GROUPS /workdir
 
+    # 切换到 96G 分区克隆源码
     - name: Clone source code
       working-directory: /workdir
       run: |
@@ -86,9 +84,10 @@ jobs:
         clean: 'false'
         prefix: /workdir/openwrt
 
-    # --- 以下操作自动在 /workdir/openwrt 下执行 ---
+    # --- 以下编译与处理步骤全部指定在 /workdir/openwrt 中执行 ---
 
     - name: Install luci-app-openclash
+      working-directory: /workdir/openwrt
       run: |
         mkdir package/luci-app-openclash
         pushd package/luci-app-openclash
@@ -101,6 +100,7 @@ jobs:
         popd
 
     - name: Install other packages
+      working-directory: /workdir/openwrt
       run: |
         pushd package
         git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
@@ -109,22 +109,27 @@ jobs:
         popd
 
     - name: Load custom feeds
+      working-directory: /workdir/openwrt
       run: |
         [ -e $GITHUB_WORKSPACE/main-repo/$FEEDS_CONF ] && mv $GITHUB_WORKSPACE/main-repo/$FEEDS_CONF feeds.conf.default
         chmod +x $GITHUB_WORKSPACE/main-repo/$DIY_P1_SH
         $GITHUB_WORKSPACE/main-repo/$DIY_P1_SH
 
     - name: Run lenyu.sh
+      working-directory: /workdir/openwrt
       run: |
         bash $GITHUB_WORKSPACE/main-repo/lenyu.sh
 
     - name: Update feeds
+      working-directory: /workdir/openwrt
       run: ./scripts/feeds update -a
 
     - name: Install feeds
+      working-directory: /workdir/openwrt
       run: ./scripts/feeds install -a
 
     - name: Load custom configuration
+      working-directory: /workdir/openwrt
       run: |
         [ -e $GITHUB_WORKSPACE/main-repo/files ] && mv $GITHUB_WORKSPACE/main-repo/files files
         [ -e $GITHUB_WORKSPACE/main-repo/$CONFIG_FILE ] && mv $GITHUB_WORKSPACE/main-repo/$CONFIG_FILE .config
@@ -139,6 +144,7 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download package
+      working-directory: /workdir/openwrt
       id: package
       run: |
         echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config
@@ -148,6 +154,7 @@ jobs:
         find dl -size -1024c -exec rm -f {} \;
 
     - name: Compile the firmware
+      working-directory: /workdir/openwrt
       id: compile
       run: |
         echo -e "$(nproc) thread compile"
@@ -166,13 +173,15 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: bin
+        path: /workdir/openwrt/bin
 
     - name: Run rename.sh
+      working-directory: /workdir/openwrt
       run: |
         bash $GITHUB_WORKSPACE/main-repo/rename.sh
 
     - name: Organize files
+      working-directory: /workdir/openwrt
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
@@ -189,6 +198,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     - name: Upload firmware to cowtransfer
+      working-directory: /workdir/openwrt
       id: cowtransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
@@ -198,6 +208,7 @@ jobs:
         echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to WeTransfer
+      working-directory: /workdir/openwrt
       id: wetransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
@@ -207,15 +218,13 @@ jobs:
         echo "url=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
 
     - name: Generate release tag
+      working-directory: /workdir/openwrt
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         touch release.txt
-        # 增加找不到文件时的 fallback 标签生成
         [ -f wget/op_version1 ] && echo "release_tag=$(cat wget/op_version1)" >> $GITHUB_OUTPUT || echo "release_tag=OpenWrt_${{ env.FILE_DATE }}" >> $GITHUB_OUTPUT
         git log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt
-        
-        # 增加容错 || true，防止某目录缺失导致直接中断
         git -C feeds/packages log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
         git -C feeds/luci log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
         git -C feeds/routing log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
@@ -238,7 +247,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
+        body_path: /workdir/openwrt/release.txt
         files: ${{ env.FIRMWARE }}/*
 
     - name: Delete workflow runs
