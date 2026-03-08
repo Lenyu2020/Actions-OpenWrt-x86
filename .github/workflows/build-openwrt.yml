@@ -35,13 +35,13 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
-        root-reserve-mb: 20480  # 将根分区保留空间从 6144 (6GB) 修改为 20480 (20GB)
+        root-reserve-mb: 20480  # 必须给根目录留足至少 20GB 空间，以供 apt 安装环境
         swap-size-mb: 10240
         remove-dotnet: 'true'
         remove-android: 'true'
@@ -50,18 +50,28 @@ jobs:
         remove-docker-images: 'true'
         build-mount-path: '/workdir'
 
-    # 将自身仓库配置拉取到 main-repo
     - name: Checkout
       uses: actions/checkout@v4
       with:
         path: main-repo
 
-    # 此时依然在系统默认环境运行
+    - name: Aggressive Free Disk Space (深度清理根目录)
+      working-directory: /
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache
+        sudo rm -rf /usr/local/share/boost
+        sudo docker image prune -a -f
+        sudo apt-get clean
+
     - name: Check initial disk space
+      working-directory: /  # 修正：在根目录下检查，避免找不到路径报错
       run: df -hT
 
-    # 初始化环境
     - name: Initialization environment
+      working-directory: /  # 修正：必须在系统环境下初始化
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -71,9 +81,8 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo chown -R $USER:$GROUPS /workdir
 
-    # 切换到 96G 分区克隆源码
     - name: Clone source code
-      working-directory: /workdir
+      working-directory: /workdir # 修正：在 96G 盘下克隆，生成 openwrt 文件夹
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
