@@ -40,8 +40,10 @@ else
     ver=""
 fi
 
-# 5. 组合最终的文件名 Base
-base_name="openwrt_x86-64-${rename_version}_${kernel_patchver}${ver}"
+# 5. 组合【纯净版号】与【文件名 Base】
+# 纯净版号形如：2603081935_6.12.74 (专供前端插件和 GitHub 标题/Tag 使用)
+pure_version="${rename_version}_${kernel_patchver}${ver}"
+base_name="openwrt_x86-64-${pure_version}"
 
 dest_img_name="${base_name}_dev_Lenyu.img.gz"
 dest_efi_name="${base_name}_uefi-gpt_dev_Lenyu.img.gz"
@@ -67,7 +69,10 @@ fi
 
 # 7. 回到根目录，生成供 GitHub Actions Release 提取的标签与文件清单
 cd - >/dev/null
-echo "${base_name}_dev_Lenyu" > wget/op_version1
+
+# 【核心修改点】：这里只输出纯净的版本号给 GitHub，剥离多余的前后缀
+echo "$pure_version" > wget/op_version1
+
 ls -1 ${TARGET_DIR} > wget/open_dev_md5
 
 exit 0
