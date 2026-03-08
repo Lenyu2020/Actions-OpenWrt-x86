@@ -38,40 +38,30 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - name: Maximize Build Space
-      uses: easimon/maximize-build-space@master
-      with:
-        root-reserve-mb: 20480  # 必须给根目录留足至少 20GB 空间，以供 apt 安装环境
-        swap-size-mb: 10240
-        remove-dotnet: 'true'
-        remove-android: 'true'
-        remove-haskell: 'true'
-        remove-codeql: 'true'
-        remove-docker-images: 'true'
-        build-mount-path: '/workdir'
-
-    - name: Checkout
+    # 1. 检出你自己的仓库文件到一个单独的文件夹
+    - name: Checkout main-repo
       uses: actions/checkout@v4
       with:
         path: main-repo
 
-    - name: Aggressive Free Disk Space (深度清理根目录)
-      working-directory: /
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /opt/hostedtoolcache
-        sudo rm -rf /usr/local/share/boost
-        sudo docker image prune -a -f
-        sudo apt-get clean
+    # 2. 暴力清理系统根目录空间（释放约 30G+）
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: true
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: false  # 必须设为 false 以保留 Swap 避免内存溢出
 
-    - name: Check initial disk space
-      working-directory: /  # 修正：在根目录下检查，避免找不到路径报错
+    # 3. 检查清理后的真实可用空间
+    - name: Check free space
       run: df -hT
 
+    # 4. 初始化编译环境（此时根目录空间充足，不会再报错）
     - name: Initialization environment
-      working-directory: /  # 修正：必须在系统环境下初始化
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -79,24 +69,23 @@ jobs:
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
-        sudo chown -R $USER:$GROUPS /workdir
 
+    # 5. 克隆 OpenWrt 源码（直接拉取到默认工作区即可）
     - name: Clone source code
-      working-directory: /workdir # 修正：在 96G 盘下克隆，生成 openwrt 文件夹
-      run: |
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+      run: git clone $REPO_URL -b $REPO_BRANCH openwrt
 
+    # 6. 设置编译缓存
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
         ccache: 'true'
         clean: 'false'
-        prefix: /workdir/openwrt
+        prefix: ${{ github.workspace }}/openwrt
 
-    # --- 以下编译与处理步骤全部指定在 /workdir/openwrt 中执行 ---
+    # --- 以下所有针对源码的操作，均在 openwrt 目录下进行 ---
 
-    - name: Install luci-app-openclash
-      working-directory: /workdir/openwrt
+    - name: Install custom packages
+      working-directory: openwrt
       run: |
         mkdir package/luci-app-openclash
         pushd package/luci-app-openclash
@@ -108,9 +97,6 @@ jobs:
         git branch --set-upstream-to=origin/master
         popd
 
-    - name: Install other packages
-      working-directory: /workdir/openwrt
-      run: |
         pushd package
         git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
         git clone https://github.com/messense/aliyundrive-webdav.git
@@ -118,32 +104,28 @@ jobs:
         popd
 
     - name: Load custom feeds
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       run: |
-        [ -e $GITHUB_WORKSPACE/main-repo/$FEEDS_CONF ] && mv $GITHUB_WORKSPACE/main-repo/$FEEDS_CONF feeds.conf.default
-        chmod +x $GITHUB_WORKSPACE/main-repo/$DIY_P1_SH
-        $GITHUB_WORKSPACE/main-repo/$DIY_P1_SH
-
-    - name: Run lenyu.sh
-      working-directory: /workdir/openwrt
-      run: |
-        bash $GITHUB_WORKSPACE/main-repo/lenyu.sh
+        [ -e ../main-repo/$FEEDS_CONF ] && mv ../main-repo/$FEEDS_CONF feeds.conf.default
+        chmod +x ../main-repo/$DIY_P1_SH
+        ../main-repo/$DIY_P1_SH
+        bash ../main-repo/lenyu.sh
 
     - name: Update feeds
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       run: ./scripts/feeds update -a
 
     - name: Install feeds
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       run: ./scripts/feeds install -a
 
     - name: Load custom configuration
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       run: |
-        [ -e $GITHUB_WORKSPACE/main-repo/files ] && mv $GITHUB_WORKSPACE/main-repo/files files
-        [ -e $GITHUB_WORKSPACE/main-repo/$CONFIG_FILE ] && mv $GITHUB_WORKSPACE/main-repo/$CONFIG_FILE .config
-        chmod +x $GITHUB_WORKSPACE/main-repo/$DIY_P2_SH
-        $GITHUB_WORKSPACE/main-repo/$DIY_P2_SH
+        [ -e ../main-repo/files ] && mv ../main-repo/files files
+        [ -e ../main-repo/$CONFIG_FILE ] && mv ../main-repo/$CONFIG_FILE .config
+        chmod +x ../main-repo/$DIY_P2_SH
+        ../main-repo/$DIY_P2_SH
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
@@ -153,7 +135,7 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download package
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       id: package
       run: |
         echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config
@@ -163,7 +145,7 @@ jobs:
         find dl -size -1024c -exec rm -f {} \;
 
     - name: Compile the firmware
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       id: compile
       run: |
         echo -e "$(nproc) thread compile"
@@ -182,15 +164,15 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: /workdir/openwrt/bin
+        path: openwrt/bin
 
     - name: Run rename.sh
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       run: |
-        bash $GITHUB_WORKSPACE/main-repo/rename.sh
+        bash ../main-repo/rename.sh
 
     - name: Organize files
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
@@ -206,34 +188,15 @@ jobs:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
-    - name: Upload firmware to cowtransfer
-      working-directory: /workdir/openwrt
-      id: cowtransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
-        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-        echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
-
-    - name: Upload firmware to WeTransfer
-      working-directory: /workdir/openwrt
-      id: wetransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
-        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
-        echo "url=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
-
     - name: Generate release tag
-      working-directory: /workdir/openwrt
+      working-directory: openwrt
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         touch release.txt
         [ -f wget/op_version1 ] && echo "release_tag=$(cat wget/op_version1)" >> $GITHUB_OUTPUT || echo "release_tag=OpenWrt_${{ env.FILE_DATE }}" >> $GITHUB_OUTPUT
         git log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt
+        
         git -C feeds/packages log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
         git -C feeds/luci log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
         git -C feeds/routing log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
@@ -244,9 +207,6 @@ jobs:
         
         test ! -s release.txt && echo -e "\n* The source code is not updated." >> release.txt
         sed -i '1i ## Firmware Update Log' release.txt
-        
-        [ "$UPLOAD_COWTRANSFER" == "true" ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
-        [ "$UPLOAD_WETRANSFER" == "true" ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
@@ -256,7 +216,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: /workdir/openwrt/release.txt
+        body_path: openwrt/release.txt
         files: ${{ env.FIRMWARE }}/*
 
     - name: Delete workflow runs
