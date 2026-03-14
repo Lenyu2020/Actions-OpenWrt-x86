@@ -76,7 +76,7 @@ jobs:
         echo ${{ steps.combHeader.outputs.commitHash_All }} | tee .commitHash_All
         
     - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
+      uses: Mattraks/delete-workflow-runs@v2
       with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -84,7 +84,7 @@ jobs:
           keep_minimum_runs: 3
 
     - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
+      uses: dev-drprasad/delete-older-releases@v0.3.4
       with:
         keep_latest: 5
         keep_min_download_counts: 2
