@@ -396,51 +396,71 @@ set -u
 set -o pipefail
 
 ########################################
-# 固定通道（不要改，除非你知道自己在干嘛）
+# 基础配置与路径
 ########################################
 CHANNEL_PREFIX="23.05-24.10"
 PKG_EXT="ipk"
-
-########################################
-# 路径与常量
-########################################
 TEMP_DIR="/tmp/passwall_update"
 RULE_DIR="/usr/share/passwall/rules"
 RULE_BACKUP="/tmp/passwall_rule_backup"
 PSVERSION_FILE="/usr/share/psversion"
+LOCKDIR="/tmp/passwall-update.lock"
 
 RED='\033[0;31m'; BLUE='\033[0;34m'; ORANGE='\033[0;33m'; NC='\033[0m'
 echo_red(){ echo -e "${RED}$1${NC}"; }
 echo_blue(){ echo -e "${BLUE}$1${NC}"; }
 echo_orange(){ echo -e "${ORANGE}$1${NC}"; }
 
-echo_blue "== Passwall 更新脚本（23.05-24.10 锁定版）=="
+########################################
+# 0. 并发锁与清理机制
+########################################
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  echo_red "==> 另一个更新任务正在运行中，请稍后再试"
+  exit 1
+fi
+
+# 异常退出时的清理收尾
+cleanup() {
+  rm -rf "$TEMP_DIR" 2>/dev/null
+  rm -rf "$RULE_BACKUP" 2>/dev/null
+  rmdir "$LOCKDIR" 2>/dev/null
+}
+trap cleanup EXIT INT TERM
+
+echo_blue "== Passwall 更新脚本（${CHANNEL_PREFIX} 锁定优化版）=="
 
 ########################################
-# 0. 记录已安装的后端
+# 1. 记录已安装的后端
 ########################################
 echo_blue "检测已安装的后端组件..."
 BACKENDS="sing-box xray-core v2ray-plugin haproxy ipt2socks geoview"
 SAVED_BACKENDS=""
 for p in $BACKENDS; do
-  opkg list-installed | awk '{print $1}' | grep -qx "$p" && SAVED_BACKENDS="$SAVED_BACKENDS $p"
+  if opkg list-installed | awk '{print $1}' | grep -qx "$p"; then
+    SAVED_BACKENDS="$SAVED_BACKENDS $p"
+  fi
 done
 
 ########################################
-# 1. 获取 GitHub 最新 release
+# 2. 获取 GitHub 最新 release
 ########################################
 echo_blue "获取 GitHub 最新 release..."
-
 fetch_latest_json() {
-  command -v curl >/dev/null 2>&1 && \
-    curl -s https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest \
-    || wget -qO- https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest
+  if command -v curl >/dev/null 2>&1; then
+    curl -s --connect-timeout 15 https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest
+  else
+    wget -qO- -T 15 -t 3 https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest
+  fi
 }
 
 latest_release="$(fetch_latest_json)"
+if [ -z "$latest_release" ]; then
+  echo_red "获取 GitHub Release 数据失败，请检查网络连通性。"
+  exit 1
+fi
 
 ########################################
-# 2. 严格匹配 23.05-24.10 的 ipk（只取一个）
+# 3. 严格匹配 ipk（只取一个）
 ########################################
 match_pkg() {
   echo "$latest_release" | \
@@ -452,32 +472,22 @@ match_pkg() {
 luci_app_passwall_url="$(match_pkg "app-passwall")"
 luci_i18n_passwall_url="$(match_pkg "i18n-passwall-zh-cn")"
 
-[ -z "$luci_app_passwall_url" ] && {
-  echo_red "未找到 ${CHANNEL_PREFIX} 的 luci-app-passwall 包"
+if [ -z "$luci_app_passwall_url" ] || [ -z "$luci_i18n_passwall_url" ]; then
+  echo_red "未找到匹配 ${CHANNEL_PREFIX} 的相关安装包。"
   exit 1
-}
-
-[ -z "$luci_i18n_passwall_url" ] && {
-  echo_red "未找到 ${CHANNEL_PREFIX} 的中文语言包"
-  exit 1
-}
+fi
 
 app_file="$(basename "$luci_app_passwall_url")"
 i18n_file="$(basename "$luci_i18n_passwall_url")"
 
 ########################################
-# 3. 提取技术版本号（忽略 -r）
+# 4. 版本比对
 ########################################
 version_new="$(echo "$app_file" | sed -E 's/.*_([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-echo_blue "最新技术版本：$version_new"
-
-########################################
-# 4. 本地版本检查（忽略 -r）
-########################################
-installed_version="$(opkg list-installed | grep '^luci-app-passwall ' | awk '{print $3}' | \
-  sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
+installed_version="$(opkg list-installed | grep '^luci-app-passwall ' | awk '{print $3}' | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
 installed_version="${installed_version:-无}"
 
+echo_blue "最新技术版本：$version_new"
 echo_blue "当前本地版本：$installed_version"
 
 if [ "$installed_version" = "$version_new" ]; then
@@ -491,23 +501,18 @@ fi
 echo_orange "即将更新到 $version_new，继续？(y/n, 默认 y)"
 read -t 10 -r reply || true
 reply=${reply:-y}
-[ "$reply" = "y" ] || exit 0
+if [ "$reply" != "y" ]; then
+  echo_blue "已取消。"
+  exit 0
+fi
 
 ########################################
 # 6. 下载新版本
 ########################################
 echo_blue "下载 Passwall 包..."
 mkdir -p "$TEMP_DIR"
-
-wget -O "$TEMP_DIR/$app_file" "$luci_app_passwall_url" || {
-  echo_red "主程序下载失败"
-  exit 1
-}
-
-wget -O "$TEMP_DIR/$i18n_file" "$luci_i18n_passwall_url" || {
-  echo_red "中文包下载失败"
-  exit 1
-}
+wget -q -O "$TEMP_DIR/$app_file" -T 15 -t 3 "$luci_app_passwall_url" || { echo_red "主程序下载失败"; exit 1; }
+wget -q -O "$TEMP_DIR/$i18n_file" -T 15 -t 3 "$luci_i18n_passwall_url" || { echo_red "中文包下载失败"; exit 1; }
 
 ########################################
 # 7. 备份自定义规则
@@ -519,22 +524,21 @@ for f in direct_host direct_ip proxy_host; do
 done
 
 ########################################
-# 8. 停止 Passwall + 清理 nft
+# 8. 停止 Passwall + 精准清理
 ########################################
-echo_blue "停止 Passwall..."
+echo_blue "停止 Passwall 并精准清理网络规则..."
 /etc/init.d/passwall stop 2>/dev/null || true
-sleep 1
+sleep 2
 
-echo_blue "清理 nft 规则..."
-nft flush ruleset 2>/dev/null || true
+# 严禁使用 nft flush ruleset，仅精准删除 Passwall 专属的表
 for table in passwall passwall_chn passwall_geo passwall1; do
   nft delete table inet "$table" 2>/dev/null || true
 done
 
 ########################################
-# 9. 安装新版本（保留配置）
+# 9. 安装新版本
 ########################################
-echo_blue "安装新版本..."
+echo_blue "执行更新..."
 opkg install "$TEMP_DIR/$app_file" --force-overwrite --force-reinstall 2>&1 | \
   grep -v "Not deleting modified conffile" || true
 
@@ -550,28 +554,47 @@ for f in direct_host direct_ip proxy_host; do
 done
 
 ########################################
-# 11. 恢复后端组件
+# 11. 恢复缺失的后端组件
 ########################################
-echo_blue "恢复后端组件..."
+echo_blue "校验后端组件状态..."
+NEED_UPDATE=0
 for p in $SAVED_BACKENDS; do
-  opkg list-installed | awk '{print $1}' | grep -qx "$p" || {
-    echo_orange "重新安装后端：$p"
+  if ! opkg list-installed | awk '{print $1}' | grep -qx "$p"; then
+    if [ "$NEED_UPDATE" -eq 0 ]; then
+      echo_blue "检测到后端丢失，正在刷新软件源索引..."
+      opkg update >/dev/null 2>&1
+      NEED_UPDATE=1
+    fi
+    echo_orange "重新安装：$p"
     opkg install "$p" --force-overwrite
-  }
+  fi
 done
 
 ########################################
-# 12. 重启 Passwall
+# 12. 状态刷新与服务重启
 ########################################
-echo_blue "重启 Passwall..."
-/etc/init.d/passwall restart 2>/dev/null || true
-
 echo "$version_new" > "$PSVERSION_FILE"
 
-rm -rf "$TEMP_DIR" "$RULE_BACKUP"
+echo_blue "重载系统防火墙 (fw4)..."
+/etc/init.d/firewall restart >/dev/null 2>&1
+sleep 2
 
-echo_blue "=== Passwall 更新完成（23.05-24.10 最终锁定版,马上重启系统）==="
-reboot
+echo_blue "启动 Passwall..."
+/etc/init.d/passwall restart 2>/dev/null || true
+
+echo_blue "重启 DNS 服务..."
+/etc/init.d/dnsmasq restart >/dev/null 2>&1 || true
+
+echo_blue "清理残留的网络连接跟踪 (Conntrack)..."
+# 强制切断旧的 TCP/UDP 连接缓存，让流量重新匹配新规则
+if command -v conntrack >/dev/null 2>&1; then
+  conntrack -F >/dev/null 2>&1 || true
+else
+  # 兼容未安装 conntrack 工具的情况
+  echo 1 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_loose 2>/dev/null || true
+fi
+
+echo_blue "=== Passwall 热更新完成，网络已无缝恢复 ==="
 exit 0
 EOF
 
