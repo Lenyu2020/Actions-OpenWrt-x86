@@ -586,12 +586,12 @@ echo_blue "重启 DNS 服务..."
 /etc/init.d/dnsmasq restart >/dev/null 2>&1 || true
 
 echo_blue "清理残留的网络连接跟踪 (Conntrack)..."
-# 强制切断旧的 TCP/UDP 连接缓存，让流量重新匹配新规则
 if command -v conntrack >/dev/null 2>&1; then
   conntrack -F >/dev/null 2>&1 || true
 else
-  # 兼容未安装 conntrack 工具的情况
-  echo 1 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_loose 2>/dev/null || true
+  # 兼容新旧内核路径，并使用 () 放入子 Shell 彻底屏蔽重定向报错
+  (echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose) 2>/dev/null || true
+  (echo 1 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_loose) 2>/dev/null || true
 fi
 
 echo_blue "=== Passwall 热更新完成，网络已无缝恢复 ==="
