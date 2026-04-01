@@ -136,10 +136,25 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download package
-      working-directory: openwrt
       id: package
       run: |
+        cd openwrt
         echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config
+        
+        # 1. 防 Rust 404 的代码保留
+        if [ -f feeds/packages/lang/rust/Makefile ]; then
+          sed -i '/download-ci-llvm/ s/true/false/g' feeds/packages/lang/rust/Makefile
+        fi
+        
+        # 2. ☢️ 物理剔除新内核杀手 ksmbd，并强行替换为 samba4
+        rm -rf package/kernel/ksmbd
+        rm -rf feeds/packages/net/ksmbd-tools
+        sed -i 's/CONFIG_PACKAGE_luci-app-ksmbd=y/# CONFIG_PACKAGE_luci-app-ksmbd is not set/g' .config
+        sed -i 's/CONFIG_PACKAGE_ksmbd-server=y/# CONFIG_PACKAGE_ksmbd-server is not set/g' .config
+        echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
+        echo "CONFIG_PACKAGE_samba4-libs=y" >> .config
+        echo "CONFIG_PACKAGE_samba4-server=y" >> .config
+        
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
