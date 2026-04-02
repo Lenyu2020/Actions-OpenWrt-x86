@@ -141,16 +141,23 @@ jobs:
         cd openwrt
         echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config
         
-        # 1. 防 Rust 404 的代码保留
+        # 1. 防 Rust 404 代码保留
         if [ -f feeds/packages/lang/rust/Makefile ]; then
           sed -i '/download-ci-llvm/ s/true/false/g' feeds/packages/lang/rust/Makefile
         fi
         
-        # 2. ☢️ 物理剔除新内核杀手 ksmbd，并强行替换为 samba4
+        # 2. ☢️ 物理剔除 ksmbd 及其所有的捆绑小弟
         rm -rf package/kernel/ksmbd
         rm -rf feeds/packages/net/ksmbd-tools
+        # 使用 find 命令全目录地毯式搜索并删除 autosamba 和 luci-app-ksmbd，防止 Lean 调整目录
+        find feeds package -name "luci-app-ksmbd" -type d -exec rm -rf {} +
+        find feeds package -name "autosamba" -type d -exec rm -rf {} +
+        
+        # 3. 清理 .config 中的遗留残留，并强制启用稳定的 samba4
         sed -i 's/CONFIG_PACKAGE_luci-app-ksmbd=y/# CONFIG_PACKAGE_luci-app-ksmbd is not set/g' .config
         sed -i 's/CONFIG_PACKAGE_ksmbd-server=y/# CONFIG_PACKAGE_ksmbd-server is not set/g' .config
+        sed -i 's/CONFIG_PACKAGE_autosamba=y/# CONFIG_PACKAGE_autosamba is not set/g' .config
+        
         echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
         echo "CONFIG_PACKAGE_samba4-libs=y" >> .config
         echo "CONFIG_PACKAGE_samba4-server=y" >> .config
