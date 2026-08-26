@@ -79,23 +79,11 @@ jobs:
     - name: Install custom packages
       working-directory: openwrt
       run: |
-          # 1. 下载 OpenClash (使用官方稀疏检出，只拉取这一个文件夹以防断网)
-          mkdir -p package/luci-app-openclash
-          pushd package/luci-app-openclash
-          git init
-          git remote add -f origin https://github.com/vernesong/OpenClash.git
-          git config core.sparsecheckout true
-          echo "luci-app-openclash" >> .git/info/sparse-checkout
-          git pull --depth 1 origin master
-          git branch --set-upstream-to=origin/master master
-          popd # 回到 openwrt 主目录
-
-          # 2. 统一进入 package 目录，批量下载其余插件
-          pushd package
-          git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
-          git clone https://github.com
-          git clone https://github.com
-          popd # 再次回到 openwrt 主目录
+        # 直接指定目标路径，一行命令完成创建 + 下载
+        git clone -b master --depth 1 https://github.com/vernesong/OpenClash.git package/luci-app-openclash
+        git clone -b dev --depth 1 https://github.com/Blueplanet20120/luci-app-romupdate.git package/luci-app-romupdate
+        git clone --depth 1 https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webdav
+        git clone --depth 1 https://github.com/kuoruan/luci-app-frpc.git package/luci-app-frpc
 
     - name: Load custom feeds
       working-directory: openwrt
