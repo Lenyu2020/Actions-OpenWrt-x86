@@ -77,13 +77,17 @@ jobs:
         prefix: ${{ github.workspace }}/openwrt
 
     - name: Install custom packages
-      working-directory: openwrt
-      run: |
-        # 直接指定目标路径，一行命令完成创建 + 下载
-        git clone -b master --depth 1 https://github.com/vernesong/OpenClash.git package/luci-app-openclash
-        git clone -b dev --depth 1 https://github.com/Blueplanet20120/luci-app-romupdate.git package/luci-app-romupdate
-        git clone --depth 1 https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webdav
-        git clone --depth 1 https://github.com/kuoruan/luci-app-frpc.git package/luci-app-frpc
+     working-directory: openwrt
+     run: |
+      # 1. 拉取 OpenClash 并提取核心子目录（保证 package/luci-app-openclash 纯净无嵌套）
+      git clone --depth 1 https://github.com/vernesong/OpenClash.git tmp_oc
+      mv tmp_oc/luci-app-openclash package/
+      rm -rf tmp_oc
+    
+      # 2. 其他单包插件直接 clone 到 package/
+      git clone -b dev --depth 1 https://github.com/Blueplanet20120/luci-app-romupdate.git package/luci-app-romupdate
+      git clone --depth 1 https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webdav
+      git clone --depth 1 https://github.com/kuoruan/luci-app-frpc.git package/luci-app-frpc
 
     - name: Load custom feeds
       working-directory: openwrt
