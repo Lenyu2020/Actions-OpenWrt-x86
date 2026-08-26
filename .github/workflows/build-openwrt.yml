@@ -88,15 +88,14 @@ jobs:
           echo "luci-app-openclash" >> .git/info/sparse-checkout
           git pull --depth 1 origin master
           git branch --set-upstream-to=origin/master master
-          popd # 👈 瞬间传送回 openwrt 主目录
+          popd # 回到 openwrt 主目录
 
           # 2. 统一进入 package 目录，批量下载其余插件
           pushd package
           git clone -b dev https://github.com/Blueplanet20120/luci-app-romupdate.git
-          git clone https://github.com/messense/aliyundrive-webdav.git
-          git clone https://github.com/kuoruan/luci-app-frpc.git
-          popd # 👈 再次传送回 openwrt 主目录，保证后续编译步骤路径正确
-
+          git clone https://github.com
+          git clone https://github.com
+          popd # 再次回到 openwrt 主目录
 
     - name: Load custom feeds
       working-directory: openwrt
