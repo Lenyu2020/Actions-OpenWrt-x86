@@ -84,6 +84,32 @@ jobs:
         git clone -b dev --depth 1 https://github.com/Blueplanet20120/luci-app-romupdate.git package/luci-app-romupdate
         git clone --depth 1 https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webdav
         git clone --depth 1 https://github.com/kuoruan/luci-app-frpc.git package/luci-app-frpc
+    
+    - name: Patch Node.js C++13/14 build issue
+      run: |
+        # 在 Node.js 的 V8 logging.h 和 macros.h 中强行注入 <cstdint>
+        NODE_PATH="feeds/packages/lang/node"
+        if [ -d "$NODE_PATH" ]; then
+          mkdir -p $NODE_PATH/patches
+          cat << 'EOF' > $NODE_PATH/patches/999-fix-gcc13-cstdint.patch
+        --- a/deps/v8/src/base/logging.h
+        +++ b/deps/v8/src/base/logging.h
+        @@ -5,4 +5,5 @@
+         #ifndef V8_BASE_LOGGING_H_
+         #define V8_BASE_LOGGING_H_
+   
+          +#include <cstdint>
+           #include <cstring>
+          --- a/deps/v8/src/base/macros.h
+          +++ b/deps/v8/src/base/macros.h
+          @@ -5,4 +5,5 @@
+           #ifndef V8_BASE_MACROS_H_
+           #define V8_BASE_MACROS_H_
+           
+          +#include <cstdint>
+           #include <cstddef>
+          EOF
+              fi
 
     - name: Load custom feeds
       working-directory: openwrt
