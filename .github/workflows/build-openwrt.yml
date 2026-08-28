@@ -87,29 +87,18 @@ jobs:
     
     - name: Patch Node.js C++13/14 build issue
       run: |
-        # 在 Node.js 的 V8 logging.h 和 macros.h 中强行注入 <cstdint>
-        NODE_PATH="feeds/packages/lang/node"
-        if [ -d "$NODE_PATH" ]; then
-          mkdir -p $NODE_PATH/patches
-          cat << 'EOF' > $NODE_PATH/patches/999-fix-gcc13-cstdint.patch
-        --- a/deps/v8/src/base/logging.h
-        +++ b/deps/v8/src/base/logging.h
-        @@ -5,4 +5,5 @@
-         #ifndef V8_BASE_LOGGING_H_
-         #define V8_BASE_LOGGING_H_
-   
-          +#include <cstdint>
-           #include <cstring>
-          --- a/deps/v8/src/base/macros.h
-          +++ b/deps/v8/src/base/macros.h
-          @@ -5,4 +5,5 @@
-           #ifndef V8_BASE_MACROS_H_
-           #define V8_BASE_MACROS_H_
-           
-          +#include <cstdint>
-           #include <cstddef>
-          EOF
-              fi
+        # 1. 直接通过 sed 向 Node.js 源码中补齐 <cstdint> 包含
+        NODE_LOGGING="feeds/packages/lang/node/patches/999-fix-gcc13-cstdint.patch"
+        
+        # 如果 Node 源码包已解压或存在 feeds 目录，直接给 logging.h 和 macros.h 头部补上 include
+        find build_dir/hostpkg/ -name "logging.h" -path "*/v8/src/base/*" -exec sed -i '1i#include <cstdint>' {} + 2>/dev/null || true
+        find build_dir/hostpkg/ -name "macros.h" -path "*/v8/src/base/*" -exec sed -i '1i#include <cstdint>' {} + 2>/dev/null || true
+
+        # 2. 同时向 package patch 目录写入规范补丁（供编译前使用）
+        NODE_PATCH_DIR="feeds/packages/lang/node/patches"
+        if [ -d "$NODE_PATCH_DIR" ]; then
+          printf '--- a/deps/v8/src/base/logging.h\n+++ b/deps/v8/src/base/logging.h\n@@ -5,4 +5,5 @@\n #ifndef V8_BASE_LOGGING_H_\n #define V8_BASE_LOGGING_H_\n \n+#include <cstdint>\n #include <cstring>\n--- a/deps/v8/src/base/macros.h\n+++ b/deps/v8/src/base/macros.h\n@@ -5,4 +5,5 @@\n #ifndef V8_BASE_MACROS_H_\n #define V8_BASE_MACROS_H_\n \n+#include <cstdint>\n #include <cstddef>\n' > "$NODE_PATCH_DIR/999-fix-gcc13-cstdint.patch"
+        fi
 
     - name: Load custom feeds
       working-directory: openwrt
