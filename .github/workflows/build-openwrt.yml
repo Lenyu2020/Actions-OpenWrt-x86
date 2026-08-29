@@ -147,34 +147,34 @@ jobs:
         sed -i 's/CONFIG_PACKAGE_luci-app-vlmcsd=y/# CONFIG_PACKAGE_luci-app-vlmcsd is not set/g' .config
         sed -i 's/CONFIG_PACKAGE_vlmcsd=y/# CONFIG_PACKAGE_vlmcsd is not set/g' .config
         
-        # 5. 核心修复：直接向 feeds 里的 Node.js 补丁文件夹追加补丁，保证编译 hostpkg/node 时带上 <cstdint>
+        # 5. 核心修复：直接向 feeds 里的 Node.js 补丁文件夹追加补丁
         NODE_PATCH_DIR="feeds/packages/lang/node/patches"
         if [ -d "$NODE_PATCH_DIR" ]; then
           cat << 'EOF' > "$NODE_PATCH_DIR/999-fix-gcc13-cstdint.patch"
-          --- a/deps/v8/src/base/logging.h
-          +++ b/deps/v8/src/base/logging.h
-          @@ -5,4 +5,5 @@
-           #ifndef V8_BASE_LOGGING_H_
-           #define V8_BASE_LOGGING_H_
-          
-          +#include <cstdint>
-           #include <cstring>
-          --- a/deps/v8/src/base/macros.h
-          +++ b/deps/v8/src/base/macros.h
-          @@ -5,4 +5,5 @@
-           #ifndef V8_BASE_MACROS_H_
-           #define V8_BASE_MACROS_H_
-          
-          +#include <cstdint>
-           #include <cstddef>
-          EOF
-                  fi
+        --- a/deps/v8/src/base/logging.h
+        +++ b/deps/v8/src/base/logging.h
+        @@ -5,4 +5,5 @@
+         #ifndef V8_BASE_LOGGING_H_
+         #define V8_BASE_LOGGING_H_
         
-          make defconfig
-          make download -j8
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-
+        +#include <cstdint>
+         #include <cstring>
+        --- a/deps/v8/src/base/macros.h
+        +++ b/deps/v8/src/base/macros.h
+        @@ -5,4 +5,5 @@
+         #ifndef V8_BASE_MACROS_H_
+         #define V8_BASE_MACROS_H_
+        
+        +#include <cstdint>
+         #include <cstddef>
+        EOF
+                fi
+        
+                make defconfig
+                make download -j8
+                find dl -size -1024c -exec ls -l {} \;
+                find dl -size -1024c -exec rm -f {} \;
+        
     - name: Compile the firmware
       working-directory: openwrt
       id: compile
