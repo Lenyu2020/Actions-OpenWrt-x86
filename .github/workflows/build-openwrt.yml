@@ -84,21 +84,6 @@ jobs:
         git clone -b dev --depth 1 https://github.com/Blueplanet20120/luci-app-romupdate.git package/luci-app-romupdate
         git clone --depth 1 https://github.com/messense/aliyundrive-webdav.git package/aliyundrive-webdav
         git clone --depth 1 https://github.com/kuoruan/luci-app-frpc.git package/luci-app-frpc
-    
-    - name: Patch Node.js C++13/14 build issue
-      run: |
-        # 1. 直接通过 sed 向 Node.js 源码中补齐 <cstdint> 包含
-        NODE_LOGGING="feeds/packages/lang/node/patches/999-fix-gcc13-cstdint.patch"
-        
-        # 如果 Node 源码包已解压或存在 feeds 目录，直接给 logging.h 和 macros.h 头部补上 include
-        find build_dir/hostpkg/ -name "logging.h" -path "*/v8/src/base/*" -exec sed -i '1i#include <cstdint>' {} + 2>/dev/null || true
-        find build_dir/hostpkg/ -name "macros.h" -path "*/v8/src/base/*" -exec sed -i '1i#include <cstdint>' {} + 2>/dev/null || true
-
-        # 2. 同时向 package patch 目录写入规范补丁（供编译前使用）
-        NODE_PATCH_DIR="feeds/packages/lang/node/patches"
-        if [ -d "$NODE_PATCH_DIR" ]; then
-          printf '--- a/deps/v8/src/base/logging.h\n+++ b/deps/v8/src/base/logging.h\n@@ -5,4 +5,5 @@\n #ifndef V8_BASE_LOGGING_H_\n #define V8_BASE_LOGGING_H_\n \n+#include <cstdint>\n #include <cstring>\n--- a/deps/v8/src/base/macros.h\n+++ b/deps/v8/src/base/macros.h\n@@ -5,4 +5,5 @@\n #ifndef V8_BASE_MACROS_H_\n #define V8_BASE_MACROS_H_\n \n+#include <cstdint>\n #include <cstddef>\n' > "$NODE_PATCH_DIR/999-fix-gcc13-cstdint.patch"
-        fi
 
     - name: Load custom feeds
       working-directory: openwrt
@@ -162,10 +147,33 @@ jobs:
         sed -i 's/CONFIG_PACKAGE_luci-app-vlmcsd=y/# CONFIG_PACKAGE_luci-app-vlmcsd is not set/g' .config
         sed -i 's/CONFIG_PACKAGE_vlmcsd=y/# CONFIG_PACKAGE_vlmcsd is not set/g' .config
         
-        make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+        # 5. 核心修复：直接向 feeds 里的 Node.js 补丁文件夹追加补丁，保证编译 hostpkg/node 时带上 <cstdint>
+        NODE_PATCH_DIR="feeds/packages/lang/node/patches"
+        if [ -d "$NODE_PATCH_DIR" ]; then
+          cat << 'EOF' > "$NODE_PATCH_DIR/999-fix-gcc13-cstdint.patch"
+          --- a/deps/v8/src/base/logging.h
+          +++ b/deps/v8/src/base/logging.h
+          @@ -5,4 +5,5 @@
+           #ifndef V8_BASE_LOGGING_H_
+           #define V8_BASE_LOGGING_H_
+          
+          +#include <cstdint>
+           #include <cstring>
+          --- a/deps/v8/src/base/macros.h
+          +++ b/deps/v8/src/base/macros.h
+          @@ -5,4 +5,5 @@
+           #ifndef V8_BASE_MACROS_H_
+           #define V8_BASE_MACROS_H_
+          
+          +#include <cstdint>
+           #include <cstddef>
+          EOF
+                  fi
+        
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
 
     - name: Compile the firmware
       working-directory: openwrt
