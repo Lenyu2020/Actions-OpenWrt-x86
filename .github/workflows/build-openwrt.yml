@@ -69,6 +69,15 @@ jobs:
     - name: Clone source code
       run: git clone $REPO_URL -b $REPO_BRANCH openwrt
 
+    # cachewrtbuild 只缓存工具链/ccache，不缓存 dl/；冷启动时 linux-firmware/gcc/boost 会把 download 拖到几十分钟
+    - name: Cache dl
+      uses: actions/cache@v4
+      with:
+        path: openwrt/dl
+        key: openwrt-dl-${{ hashFiles('main-repo/.diffconfig') }}
+        restore-keys: |
+          openwrt-dl-
+
     - name: Cache
       uses: klever1988/cachewrtbuild@main
       with:
@@ -116,8 +125,7 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    - name: Download package
-      id: package
+    - name: Prepare config
       run: |
         cd openwrt
         echo -e 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y' >> .config
@@ -151,10 +159,15 @@ jobs:
         rm -rf build_dir/hostpkg/node-* build_dir/target-*/node-*
 
         make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
-        
+
+    - name: Download package
+      working-directory: openwrt
+      id: package
+      run: |
+        make download -j$(nproc)
+        # 只删下载失败的残片，保留 .hash/.sha256 等本来就很小的校验文件
+        find dl -type f -size -1024c ! -name '*.hash' ! -name '*.sha256*' ! -name '*.md5' -ls -delete || true
+
     - name: Compile the firmware
       working-directory: openwrt
       id: compile
