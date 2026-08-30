@@ -149,14 +149,17 @@ jobs:
         echo "CONFIG_PACKAGE_samba4-libs=y" >> .config
         echo "CONFIG_PACKAGE_samba4-server=y" >> .config
         
-        # 4. ☢️ 物理剔除与 ccache 致命冲突的 vlmcsd (KMS 激活服务器)
+        # 4. 物理剔除与 ccache 致命冲突的 vlmcsd (KMS 激活服务器)
         find feeds package -name "luci-app-vlmcsd" -type d -exec rm -rf {} +
         find feeds package -name "vlmcsd" -type d -exec rm -rf {} +
         sed -i 's/CONFIG_PACKAGE_luci-app-vlmcsd=y/# CONFIG_PACKAGE_luci-app-vlmcsd is not set/g' .config
         sed -i 's/CONFIG_PACKAGE_vlmcsd=y/# CONFIG_PACKAGE_vlmcsd is not set/g' .config
 
-        # 从 Node 16 切到 22 时清掉旧 host 编译树，避免 cache 继续用 v16.19.1
-        rm -rf build_dir/hostpkg/node-* build_dir/target-*/node-*
+        # 5. 关掉 naiveproxy：Chromium 系，单包就能编 1–3 小时，GitHub 6 小时上限经常被它拖死
+        #    固件里已有 openclash / passwall / hysteria / xray，一般不需要再编 naiveproxy
+        sed -i 's/CONFIG_PACKAGE_naiveproxy=y/# CONFIG_PACKAGE_naiveproxy is not set/g' .config
+        sed -i 's/CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y/# CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy is not set/g' .config
+        sed -i 's/CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy=y/# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy is not set/g' .config
 
         make defconfig
 
@@ -173,7 +176,9 @@ jobs:
       id: compile
       run: |
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
+        # 禁止失败后改成 -j1 编整个 world：单线程会把剩下几小时烧光，然后被 GitHub 6h 超时掐掉
+        # 并行失败时用同样线程数再跑一次并打开日志，便于直接看到真正的编译错误
+        make -j$(nproc) || make -j$(nproc) V=s
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
