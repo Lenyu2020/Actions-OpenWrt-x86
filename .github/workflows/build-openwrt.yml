@@ -71,7 +71,7 @@ jobs:
 
     # cachewrtbuild 只缓存工具链/ccache，不缓存 dl/；冷启动时 linux-firmware/gcc/boost 会把 download 拖到几十分钟
     - name: Cache dl
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: openwrt/dl
         key: openwrt-dl-${{ hashFiles('main-repo/.diffconfig') }}
@@ -135,141 +135,52 @@ jobs:
           sed -i '/download-ci-llvm/ s/true/false/g' feeds/packages/lang/rust/Makefile
         fi
         
-        # 2. 物理剔除 ksmbd 及其捆绑小弟
+        # 2. 物理剔除 ksmbd / vlmcsd（只改 config 不够，feeds 仍可能装回来）
         rm -rf package/kernel/ksmbd
         rm -rf feeds/packages/net/ksmbd-tools
         find feeds package -name "luci-app-ksmbd" -type d -exec rm -rf {} +
         find feeds package -name "autosamba" -type d -exec rm -rf {} +
-        
-        # 3. 强制切换 samba4
-        sed -i 's/CONFIG_PACKAGE_luci-app-ksmbd=y/# CONFIG_PACKAGE_luci-app-ksmbd is not set/g' .config
-        sed -i 's/CONFIG_PACKAGE_ksmbd-server=y/# CONFIG_PACKAGE_ksmbd-server is not set/g' .config
-        sed -i 's/CONFIG_PACKAGE_autosamba=y/# CONFIG_PACKAGE_autosamba is not set/g' .config
-        echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
-        echo "CONFIG_PACKAGE_samba4-libs=y" >> .config
-        echo "CONFIG_PACKAGE_samba4-server=y" >> .config
-        
-        # 4. 物理剔除与 ccache 致命冲突的 vlmcsd (KMS 激活服务器)
         find feeds package -name "luci-app-vlmcsd" -type d -exec rm -rf {} +
         find feeds package -name "vlmcsd" -type d -exec rm -rf {} +
-        sed -i 's/CONFIG_PACKAGE_luci-app-vlmcsd=y/# CONFIG_PACKAGE_luci-app-vlmcsd is not set/g' .config
-        sed -i 's/CONFIG_PACKAGE_vlmcsd=y/# CONFIG_PACKAGE_vlmcsd is not set/g' .config
-
-        # 5. 关掉 naiveproxy：Chromium 系，单包就能编 1–3 小时，GitHub 6 小时上限经常被它拖死
-        #    固件里已有 openclash / passwall / hysteria / xray，一般不需要再编 naiveproxy
-        sed -i 's/CONFIG_PACKAGE_naiveproxy=y/# CONFIG_PACKAGE_naiveproxy is not set/g' .config
-        sed -i 's/CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y/# CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy is not set/g' .config
-        sed -i 's/CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy=y/# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy is not set/g' .config
 
         make defconfig
 
+        # 3. 与 .diffconfig 对齐：defconfig 后再锁一次，防止默认依赖把大件拉回
+        disable_pkg() {
+          local k="$1"
+          sed -i "s/^CONFIG_${k}=y/# CONFIG_${k} is not set/" .config || true
+          grep -q "^# CONFIG_${k} is not set" .config || echo "# CONFIG_${k} is not set" >> .config
+        }
+        disable_pkg PACKAGE_luci-app-ksmbd
+        disable_pkg PACKAGE_ksmbd-server
+        disable_pkg PACKAGE_autosamba
+        disable_pkg PACKAGE_luci-app-vlmcsd
+        disable_pkg PACKAGE_vlmcsd
+        disable_pkg PACKAGE_naiveproxy
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy
+        disable_pkg PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy
+        disable_pkg PACKAGE_shadowsocks-rust
+        disable_pkg PACKAGE_shadowsocks-rust-sslocal
+        disable_pkg PACKAGE_shadowsocks-rust-ssserver
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server
+        disable_pkg PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Client
+        disable_pkg PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Server
+        disable_pkg PACKAGE_v2ray-core
+        disable_pkg PACKAGE_vim-full
+        disable_pkg PACKAGE_ruby
+        disable_pkg PACKAGE_libruby
+        disable_pkg PACKAGE_node
+        disable_pkg PACKAGE_node-npm
+        disable_pkg PACKAGE_luci-app-samba4
+        disable_pkg PACKAGE_samba4-libs
+        disable_pkg PACKAGE_samba4-server
+        disable_pkg PACKAGE_wsdd2
+        disable_pkg PACKAGE_luci-app-qbittorrent
+        disable_pkg PACKAGE_luci-app-qbittorrent_static
+        disable_pkg PACKAGE_qBittorrent-static
+        disable_pkg PACKAGE_qBittorrent
+        disable_pkg PACKAGE_boost
+        make defconfig
+
     - name: Download package
-      working-directory: openwrt
-      id: package
-      run: |
-        make download -j$(nproc)
-        # 只删下载失败的残片，保留 .hash/.sha256 等本来就很小的校验文件
-        find dl -type f -size -1024c ! -name '*.hash' ! -name '*.sha256*' ! -name '*.md5' -ls -delete || true
-
-    - name: Compile the firmware
-      working-directory: openwrt
-      id: compile
-      run: |
-        echo -e "$(nproc) thread compile"
-        # 禁止失败后改成 -j1 编整个 world：单线程会把剩下几小时烧光，然后被 GitHub 6h 超时掐掉
-        # 并行失败时用同样线程数再跑一次并打开日志，便于直接看到真正的编译错误
-        make -j$(nproc) || make -j$(nproc) V=s
-        echo "status=success" >> $GITHUB_OUTPUT
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-
-    - name: Check space usage (Post-compile)
-      if: (!cancelled())
-      run: df -hT
-
-    - name: Upload bin directory
-      uses: actions/upload-artifact@v6
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
-
-    # 【核心修复点开始】：给所有的后续动作加装 success 编译成功校验锁
-    - name: Run rename.sh
-      working-directory: openwrt
-      if: steps.compile.outputs.status == 'success' && !cancelled()
-      run: |
-        bash ../main-repo/rename.sh
-
-    - name: Organize files
-      working-directory: openwrt
-      id: organize
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      run: |
-        cd bin/targets/*/*
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: Upload firmware directory
-      uses: actions/upload-artifact@v6
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
-
-    - name: Generate release tag
-      working-directory: openwrt
-      id: tag
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        touch release.txt
-        [ -f wget/op_version1 ] && echo "release_tag=$(cat wget/op_version1)" >> $GITHUB_OUTPUT || echo "release_tag=OpenWrt_${{ env.FILE_DATE }}" >> $GITHUB_OUTPUT
-        git log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt
-        
-        git -C feeds/packages log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
-        git -C feeds/luci log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
-        git -C feeds/routing log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
-        git -C feeds/telephony log --pretty=format:"%s(#By %an)" --graph --since=3.hour >> release.txt || true
-        git -C feeds/helloworld log --pretty=format:"%s(#By %an)" --graph --since=4.hour >> release.txt || true
-        git -C feeds/passwall log --pretty=format:"%s(#By %an)" --graph --since=8.hour >> release.txt || true
-        git -C package/luci-app-openclash log --pretty=format:"%s(#By %an)" --graph --since=8.hour >> release.txt || true
-        
-        test ! -s release.txt && echo -e "\n* The source code is not updated." >> release.txt
-        sed -i '1i ## Firmware Update Log' release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@v3
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: openwrt/release.txt
-        files: ${{ env.FIRMWARE }}/*
-    # 【核心修复点结束】
-
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 5
-
-    - name: Remove old Releases
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        set -euo pipefail
-        REPO="${{ github.repository }}"
-        KEEP=10
-        i=0
-        while IFS= read -r tag; do
-          if [ "$i" -ge "$KEEP" ]; then
-            echo "Deleting release (and tag): $tag"
-            gh release delete "$tag" --yes --cleanup-tag -R "$REPO" || true
-          fi
-          i=$((i + 1))
-        done < <(gh api "repos/${REPO}/releases" --paginate --jq '.[] | .tag_name')
