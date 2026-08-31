@@ -136,17 +136,10 @@ jobs:
         fi
 
         # gettext-full host：bison-i18n.m4 过旧导致 BISON_LOCALEDIR 未定义
-        python3 -c '
-from pathlib import Path
-p = Path("package/libs/gettext-full/Makefile")
-if p.is_file():
-    t = p.read_text()
-    needle = "HOST_CFLAGS += $(HOST_FPIC)\n"
-    extra = needle + "HOST_CFLAGS += -DBISON_LOCALEDIR=\\\"/usr/share/locale\\\"\n"
-    if "BISON_LOCALEDIR" not in t and needle in t:
-        p.write_text(t.replace(needle, extra, 1))
-        print("patched gettext-full HOST_CFLAGS for BISON_LOCALEDIR")
-'
+        GETTEXT_MK="package/libs/gettext-full/Makefile"
+        if [ -f "$GETTEXT_MK" ] && ! grep -q BISON_LOCALEDIR "$GETTEXT_MK"; then
+          sed -i 's|^HOST_CFLAGS += $(HOST_FPIC)$|&\nHOST_CFLAGS += -DBISON_LOCALEDIR=\"/usr/share/locale\"|' "$GETTEXT_MK"
+        fi
         rm -rf build_dir/hostpkg/gettext-*
         rm -f staging_dir/host/share/aclocal/bison-i18n.m4
         
