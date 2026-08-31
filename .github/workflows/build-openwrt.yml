@@ -135,10 +135,11 @@ jobs:
           sed -i '/download-ci-llvm/ s/true/false/g' feeds/packages/lang/rust/Makefile
         fi
 
-        # gettext-full host：bison-i18n.m4 过旧导致 BISON_LOCALEDIR 未定义
+        # gettext-full host：必须是 C 字符串，否则 relocate(/usr/...) 会在 '/' 处语法错误
         GETTEXT_MK="package/libs/gettext-full/Makefile"
-        if [ -f "$GETTEXT_MK" ] && ! grep -q BISON_LOCALEDIR "$GETTEXT_MK"; then
-          sed -i 's|^HOST_CFLAGS += $(HOST_FPIC)$|&\nHOST_CFLAGS += -DBISON_LOCALEDIR=\"/usr/share/locale\"|' "$GETTEXT_MK"
+        if [ -f "$GETTEXT_MK" ]; then
+          sed -i '/HOST_CFLAGS += -DBISON_LOCALEDIR/d' "$GETTEXT_MK"
+          sed -i 's|^HOST_CFLAGS += $(HOST_FPIC)$|&\nHOST_CFLAGS += -DBISON_LOCALEDIR='\''"/usr/share/locale"'\''|' "$GETTEXT_MK"
         fi
         rm -rf build_dir/hostpkg/gettext-*
         rm -f staging_dir/host/share/aclocal/bison-i18n.m4
