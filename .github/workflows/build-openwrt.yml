@@ -134,6 +134,21 @@ jobs:
         if [ -f feeds/packages/lang/rust/Makefile ]; then
           sed -i '/download-ci-llvm/ s/true/false/g' feeds/packages/lang/rust/Makefile
         fi
+
+        # gettext-full host：bison-i18n.m4 过旧导致 BISON_LOCALEDIR 未定义
+        python3 -c '
+from pathlib import Path
+p = Path("package/libs/gettext-full/Makefile")
+if p.is_file():
+    t = p.read_text()
+    needle = "HOST_CFLAGS += $(HOST_FPIC)\n"
+    extra = needle + "HOST_CFLAGS += -DBISON_LOCALEDIR=\\\"/usr/share/locale\\\"\n"
+    if "BISON_LOCALEDIR" not in t and needle in t:
+        p.write_text(t.replace(needle, extra, 1))
+        print("patched gettext-full HOST_CFLAGS for BISON_LOCALEDIR")
+'
+        rm -rf build_dir/hostpkg/gettext-*
+        rm -f staging_dir/host/share/aclocal/bison-i18n.m4
         
         # 2. 物理剔除 ksmbd / vlmcsd（只改 config 不够，feeds 仍可能装回来）
         rm -rf package/kernel/ksmbd
