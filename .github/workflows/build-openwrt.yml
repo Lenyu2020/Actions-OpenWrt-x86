@@ -151,6 +151,9 @@ jobs:
         find feeds package -name "autosamba" -type d -exec rm -rf {} +
         find feeds package -name "luci-app-vlmcsd" -type d -exec rm -rf {} +
         find feeds package -name "vlmcsd" -type d -exec rm -rf {} +
+        # ruby / node：只关 CONFIG 不够。任意 ruby-* 子包仍会编译整个 ruby；NODEJS_22=y 会把 node 拉回来
+        rm -rf feeds/packages/lang/ruby
+        rm -rf feeds/packages/lang/node
 
         make defconfig
 
@@ -191,7 +194,14 @@ jobs:
         disable_pkg PACKAGE_qBittorrent
         disable_pkg PACKAGE_boost
         disable_pkg PACKAGE_geoview
-        # 不要再 make defconfig：默认 SELECT 会把刚关掉的包（node/geoview 等）拉回来
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geoview
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_SingBox
+        # 关掉所有 ruby-* / node-* 子包（只关本体时，ruby-yaml 仍会整包编译）
+        grep -E '^CONFIG_PACKAGE_(ruby|node)[^=]*=y' .config | sed 's/=y//' | sed 's/^CONFIG_//' | while read -r k; do
+          disable_pkg "$k"
+        done
+        sed -i 's/^CONFIG_NODEJS_22=y/# CONFIG_NODEJS_22 is not set/' .config || true
+        # 不要再 make defconfig：默认 SELECT 会把刚关掉的包拉回来
 
         # Go 包编译默认 GOPROXY=off，只认 dl/go-mod-cache。
         # 缓存里 sing/protobuf 残缺时 hysteria、geoview 会报 “no required module provides package”
