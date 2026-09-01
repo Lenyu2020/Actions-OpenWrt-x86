@@ -190,12 +190,22 @@ jobs:
         disable_pkg PACKAGE_qBittorrent-static
         disable_pkg PACKAGE_qBittorrent
         disable_pkg PACKAGE_boost
-        make defconfig
+        disable_pkg PACKAGE_geoview
+        # 不要再 make defconfig：默认 SELECT 会把刚关掉的包（node/geoview 等）拉回来
+
+        # Go 包编译默认 GOPROXY=off，只认 dl/go-mod-cache。
+        # 缓存里 sing/protobuf 残缺时 hysteria、geoview 会报 “no required module provides package”
+        rm -rf dl/go-mod-cache
+        if [ -f feeds/packages/lang/golang/golang-package.mk ]; then
+          sed -i 's|GOPROXY=off|GOPROXY=https://proxy.golang.org,direct|g' feeds/packages/lang/golang/golang-package.mk
+        fi
 
     - name: Download package
       working-directory: openwrt
       id: package
       run: |
+        export GOPROXY=https://proxy.golang.org,direct
+        export GOSUMDB=sum.golang.org
         make download -j$(nproc)
         # 只删下载失败的残片，保留 .hash/.sha256 等本来就很小的校验文件
         find dl -type f -size -1024c ! -name '*.hash' ! -name '*.sha256*' ! -name '*.md5' -ls -delete || true
@@ -205,6 +215,8 @@ jobs:
       id: compile
       run: |
         echo -e "$(nproc) thread compile"
+        export GOPROXY=https://proxy.golang.org,direct
+        export GOSUMDB=sum.golang.org
         # 禁止失败后改成 -j1 编整个 world：单线程会把剩下几小时烧光，然后被 GitHub 6h 超时掐掉
         # 并行失败时用同样线程数再跑一次并打开日志，便于直接看到真正的编译错误
         make -j$(nproc) || make -j$(nproc) V=s
