@@ -194,8 +194,28 @@ jobs:
         disable_pkg PACKAGE_qBittorrent
         disable_pkg PACKAGE_boost
         disable_pkg PACKAGE_geoview
+        disable_pkg PACKAGE_luci-app-passwall_INCLUDE_Geoview
         disable_pkg PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geoview
         disable_pkg PACKAGE_luci-app-passwall_INCLUDE_SingBox
+        disable_pkg PACKAGE_sing-box
+        # passwall 新版 LUCI_DEPENDS 硬性要求这些；缺了或与 dnsmasq 并存会在 package/install 报 Error 255
+        enable_pkg() {
+          local k="$1"
+          sed -i "s/^# CONFIG_${k} is not set/CONFIG_${k}=y/" .config || true
+          grep -q "^CONFIG_${k}=y" .config || echo "CONFIG_${k}=y" >> .config
+        }
+        disable_pkg PACKAGE_dnsmasq
+        enable_pkg PACKAGE_dnsmasq-full
+        enable_pkg PACKAGE_dnsmasq_full_ipset
+        enable_pkg PACKAGE_ip-full
+        enable_pkg PACKAGE_coreutils-base64
+        enable_pkg PACKAGE_lyaml
+        enable_pkg PACKAGE_chinadns-ng
+        enable_pkg PACKAGE_kmod-nft-tproxy
+        enable_pkg PACKAGE_kmod-nft-socket
+        enable_pkg PACKAGE_kmod-nft-nat
+        enable_pkg PACKAGE_iptables-mod-tproxy
+        enable_pkg PACKAGE_iptables-zz-legacy
         # 关掉所有 ruby-* / node-* 子包（只关本体时，ruby-yaml 仍会整包编译）
         grep -E '^CONFIG_PACKAGE_(ruby|node)[^=]*=y' .config | sed 's/=y//' | sed 's/^CONFIG_//' | while read -r k; do
           disable_pkg "$k"
