@@ -22,6 +22,20 @@ old_DISTRIB_REVISION=$(grep "DISTRIB_REVISION=" "$TARGET_FILE" | cut -d \' -f 2)
 if [ -n "$old_DISTRIB_REVISION" ]; then
     sed -i "s/${old_DISTRIB_REVISION}/${new_DISTRIB_REVISION}/" "$TARGET_FILE"
 fi
+# 页脚读的是 os-release 的 VERSION 和 BUILD_ID，修订号会紧贴在版本后面
+sed -i "s|DISTRIB_REVISION='${new_DISTRIB_REVISION}'|DISTRIB_REVISION=''|" "$TARGET_FILE"
+os_release_template="package/base-files/files/usr/lib/os-release"
+if [ -f "$os_release_template" ]; then
+    sed -i "s|^VERSION=\".*\"|VERSION=\"${new_DISTRIB_REVISION}\"|" "$os_release_template"
+    sed -i "s|^BUILD_ID=\".*\"|BUILD_ID=\"\"|" "$os_release_template"
+    sed -i "s|^OPENWRT_RELEASE=\".*\"|OPENWRT_RELEASE=\"LEDE ${new_DISTRIB_REVISION}\"|" "$os_release_template"
+fi
+owrt_release_template="package/base-files/files/etc/openwrt_release"
+if [ -f "$owrt_release_template" ]; then
+    sed -i "s|^DISTRIB_RELEASE=.*|DISTRIB_RELEASE='${new_DISTRIB_REVISION}'|" "$owrt_release_template"
+    sed -i "s|^DISTRIB_REVISION=.*|DISTRIB_REVISION=''|" "$owrt_release_template"
+    sed -i "s|^DISTRIB_DESCRIPTION=.*|DISTRIB_DESCRIPTION='LEDE ${new_DISTRIB_REVISION}'|" "$owrt_release_template"
+fi
 
 # 4. 注入 Check_Update.sh 别名
 if ! grep -q "Check_Update.sh" "$TARGET_FILE"; then

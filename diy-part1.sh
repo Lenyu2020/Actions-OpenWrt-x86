@@ -108,7 +108,7 @@ EOF
 
 cat>lenyu.sh<<-\EOOF
 #!/bin/bash
-lenyu_version="`date '+%y%m%d%H%M'`_dev_Len yu" 
+lenyu_version="`date '+%y%m%d%H%M'`_dev_Len_yu"
 echo $lenyu_version >  wget/DISTRIB_REVISION1 
 echo $lenyu_version | cut -d _ -f 1 >  files/etc/lenyu_version  
 #######
@@ -116,6 +116,19 @@ new_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION1`
 grep "DISTRIB_REVISION="  package/lean/default-settings/files/zzz-default-settings | cut -d \' -f 2 >  wget/DISTRIB_REVISION3
 old_DISTRIB_REVISION=`cat  wget/DISTRIB_REVISION3`
 sed -i "s/${old_DISTRIB_REVISION}/${new_DISTRIB_REVISION}/"   package/lean/default-settings/files/zzz-default-settings
+sed -i "s|DISTRIB_REVISION='${new_DISTRIB_REVISION}'|DISTRIB_REVISION=''|" package/lean/default-settings/files/zzz-default-settings
+os_release_template="package/base-files/files/usr/lib/os-release"
+if [ -f "$os_release_template" ]; then
+	sed -i "s|^VERSION=\".*\"|VERSION=\"${new_DISTRIB_REVISION}\"|" "$os_release_template"
+	sed -i "s|^BUILD_ID=\".*\"|BUILD_ID=\"\"|" "$os_release_template"
+	sed -i "s|^OPENWRT_RELEASE=\".*\"|OPENWRT_RELEASE=\"LEDE ${new_DISTRIB_REVISION}\"|" "$os_release_template"
+fi
+owrt_release_template="package/base-files/files/etc/openwrt_release"
+if [ -f "$owrt_release_template" ]; then
+	sed -i "s|^DISTRIB_RELEASE=.*|DISTRIB_RELEASE='${new_DISTRIB_REVISION}'|" "$owrt_release_template"
+	sed -i "s|^DISTRIB_REVISION=.*|DISTRIB_REVISION=''|" "$owrt_release_template"
+	sed -i "s|^DISTRIB_DESCRIPTION=.*|DISTRIB_DESCRIPTION='LEDE ${new_DISTRIB_REVISION}'|" "$owrt_release_template"
+fi
 #
 grep "Check_Update.sh"  package/lean/default-settings/files/zzz-default-settings
 if [ $? != 0 ]; then
@@ -390,212 +403,525 @@ fi
 exit 0
 EOF
 
-cat>files/usr/share/Lenyu-pw.sh<<-\EOF
+cat>files/usr/share/Lenyu-pw.sh<<'EOF_PW'
 #!/bin/sh
+# 在路由器上直接运行。
+# 1. 自动判断发行版、架构、apk 或 opkg
+# 2. 写入软件源和公钥，对比已安装版本
+# 3. 有更新或未安装时自动安装
+#    已装 luci-app-passwall / luci-app-passwall2 就升级已装的那个
+#    两个都没装时安装 luci-app-passwall
+#    已装的 xray-core、sing-box、chinadns-ng、hysteria、geoview 一并升级
+# 4. 再对照 GitHub Releases。luci 包是 all，不看 CPU 架构。
+#    25.12 用 25.12+ 的 apk，24.10/23.05 用 23.05-24.10 的 ipk，22.03 用 22.03- 的 ipk。
+#    发布页比软件源新时，下载该附件安装。核心组件不在发布页里。
+#
+# 版本规则：
+#   24.10、24.10-SNAPSHOT -> opkg，releases/packages-24.10
+#   25.12、25.12-SNAPSHOT -> apk，releases/packages-25.12
+#   只有发行版正好是 SNAPSHOT 才用主线快照源
+# 下载的索引和公钥暂存在临时目录，退出时删除。软件源配置会留在系统里。
+#
+#   sh test-passwall-feed.sh
+#
+# 不在路由器上时，可手动指定（会跳过自动判断）：
+#   sh test-passwall-feed.sh --release 24.10 --arch x86_64
+#   sh test-passwall-feed.sh --snapshot --arch aarch64_cortex-a53
+
 set -u
-set -o pipefail
 
-########################################
-# 基础配置与路径
-########################################
-CHANNEL_PREFIX="23.05-24.10"
-PKG_EXT="ipk"
-TEMP_DIR="/tmp/passwall_update"
-RULE_DIR="/usr/share/passwall/rules"
-RULE_BACKUP="/tmp/passwall_rule_backup"
-PSVERSION_FILE="/usr/share/psversion"
-LOCKDIR="/tmp/passwall-update.lock"
+BASE="https://master.dl.sourceforge.net/project/openwrt-passwall-build"
+FEEDS="passwall_luci passwall_packages passwall2"
+RELEASE_FILE="${OPENWRT_RELEASE_FILE:-/etc/openwrt_release}"
 
-RED='\033[0;31m'; BLUE='\033[0;34m'; ORANGE='\033[0;33m'; NC='\033[0m'
-echo_red(){ echo -e "${RED}$1${NC}"; }
-echo_blue(){ echo -e "${BLUE}$1${NC}"; }
-echo_orange(){ echo -e "${ORANGE}$1${NC}"; }
+REL_ARG=""
+ARCH_ARG=""
+SNAPSHOT_ARG=0
+FORCE=0
 
-########################################
-# 0. 并发锁与清理机制
-########################################
-if ! mkdir "$LOCKDIR" 2>/dev/null; then
-  echo_red "==> 另一个更新任务正在运行中，请稍后再试"
-  exit 1
+usage() {
+	echo "用法: sh $0"
+	echo "      sh $0 --release 24.10 --arch x86_64"
+	echo "      sh $0 --snapshot --arch aarch64_cortex-a53"
+	exit 2
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--release) REL_ARG="${2:-}"; FORCE=1; shift 2 ;;
+		--arch) ARCH_ARG="${2:-}"; FORCE=1; shift 2 ;;
+		--snapshot) SNAPSHOT_ARG=1; FORCE=1; shift ;;
+		-h|--help) usage ;;
+		*) echo "未知参数: $1"; usage ;;
+	esac
+done
+
+is_num() {
+	case "$1" in
+		""|*[!0-9]*) return 1 ;;
+	esac
+	return 0
+}
+
+has_cmd() {
+	command -v "$1" >/dev/null 2>&1
+}
+
+fetch() {
+	url="$1"
+	dest="$2"
+	if has_cmd curl; then
+		curl -fsSL --retry 2 --connect-timeout 20 --max-time 120 -o "$dest" "$url"
+	elif has_cmd wget; then
+		wget -q -O "$dest" "$url"
+	else
+		echo "需要 curl 或 wget"
+		return 1
+	fi
+}
+
+DISTRIB_ID=""
+DISTRIB_RELEASE=""
+DISTRIB_ARCH=""
+DISTRIB_TARGET=""
+SNAPSHOT=0
+SERIES=""
+PKG_KIND=""
+ARCH=""
+HAS_APK=0
+HAS_OPKG=0
+
+has_cmd apk && HAS_APK=1
+has_cmd opkg && HAS_OPKG=1
+
+if [ "$FORCE" -eq 1 ]; then
+	ARCH="$ARCH_ARG"
+	if [ "$SNAPSHOT_ARG" -eq 1 ]; then
+		SNAPSHOT=1
+		PKG_KIND="apk"
+	else
+		SERIES="$REL_ARG"
+		case "$SERIES" in
+			25.*|26.*|27.*) PKG_KIND="apk" ;;
+			*) PKG_KIND="opkg" ;;
+		esac
+	fi
+	if [ -z "$ARCH" ] || { [ "$SNAPSHOT" -eq 0 ] && [ -z "$SERIES" ]; }; then
+		usage
+	fi
+	echo "手动指定，未读 $RELEASE_FILE"
+else
+	if [ ! -f "$RELEASE_FILE" ]; then
+		echo "找不到 $RELEASE_FILE，无法自动判断发行版和架构。"
+		echo "请在路由器上执行，或手动加 --release 和 --arch。"
+		exit 2
+	fi
+	# shellcheck disable=SC1090
+	. "$RELEASE_FILE"
+	ARCH="$DISTRIB_ARCH"
+	rel="$DISTRIB_RELEASE"
+	echo "ID=$DISTRIB_ID"
+	echo "RELEASE=$DISTRIB_RELEASE"
+	echo "ARCH=$DISTRIB_ARCH"
+	echo "TARGET=$DISTRIB_TARGET"
+	echo "本机命令: apk=$([ "$HAS_APK" -eq 1 ] && echo 有 || echo 无) opkg=$([ "$HAS_OPKG" -eq 1 ] && echo 有 || echo 无)"
+
+	if [ -z "$ARCH" ] || [ -z "$rel" ]; then
+		echo "发行版文件里没有 DISTRIB_RELEASE 或 DISTRIB_ARCH"
+		exit 2
+	fi
+
+	# 25.12-SNAPSHOT 仍属于 25.12 分支，不能当成主线 SNAPSHOT。
+	case "$rel" in
+		SNAPSHOT|snapshot) SNAPSHOT=1 ;;
+	esac
+
+	if [ "$SNAPSHOT" -eq 0 ]; then
+		major=${rel%%.*}
+		rest=${rel#*.}
+		minor=${rest%%.*}
+		minor=${minor%%-*}
+		if ! is_num "$major" || ! is_num "$minor"; then
+			echo "无法从 DISTRIB_RELEASE=$rel 解析出版本号"
+			exit 2
+		fi
+		SERIES="${major}.${minor}"
+		if [ "$major" -gt 25 ] || { [ "$major" -eq 25 ] && [ "$minor" -ge 12 ]; }; then
+			PKG_KIND="apk"
+		else
+			PKG_KIND="opkg"
+		fi
+	else
+		PKG_KIND="apk"
+	fi
+
+	if [ "$PKG_KIND" = "apk" ] && [ "$HAS_APK" -eq 0 ] && [ "$HAS_OPKG" -eq 1 ]; then
+		echo "按版本应使用 apk，但这台只有 opkg，改为 opkg。"
+		PKG_KIND="opkg"
+		if [ "$SNAPSHOT" -eq 1 ]; then
+			major=${rel%%.*}
+			rest=${rel#*.}
+			minor=${rest%%.*}
+			minor=${minor%%-*}
+			if is_num "$major" && is_num "$minor"; then
+				SERIES="${major}.${minor}"
+				SNAPSHOT=0
+				echo "快照源是 apk 格式，opkg 改用 releases/packages-$SERIES"
+			fi
+		fi
+	fi
+	if [ "$PKG_KIND" = "opkg" ] && [ "$HAS_OPKG" -eq 0 ] && [ "$HAS_APK" -eq 1 ]; then
+		echo "按版本应使用 opkg，但这台只有 apk，改为 apk。"
+		PKG_KIND="apk"
+	fi
 fi
 
-# 异常退出时的清理收尾
+if [ "$SNAPSHOT" -eq 1 ]; then
+	FEED_ROOT="$BASE/snapshots/packages/$ARCH"
+	SERIES_LABEL="快照"
+else
+	FEED_ROOT="$BASE/releases/packages-$SERIES/$ARCH"
+	SERIES_LABEL="$SERIES"
+fi
+
+echo "判断: 系列=$SERIES_LABEL 架构=$ARCH 包管理器=$PKG_KIND"
+echo "软件源根: $FEED_ROOT"
+echo
+
+if [ "$PKG_KIND" = "opkg" ] && ! has_cmd gzip; then
+	echo "opkg 索引需要 gzip"
+	exit 1
+fi
+
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/passwall-feed.XXXXXX")"
 cleanup() {
-  rm -rf "$TEMP_DIR" 2>/dev/null
-  rm -rf "$RULE_BACKUP" 2>/dev/null
-  rmdir "$LOCKDIR" 2>/dev/null
+	rm -rf "$TMP"
 }
 trap cleanup EXIT INT TERM
 
-echo_blue "== Passwall 更新脚本（${CHANNEL_PREFIX} 锁定优化版）=="
-
-########################################
-# 1. 记录已安装的后端
-########################################
-echo_blue "检测已安装的后端组件..."
-BACKENDS="sing-box xray-core v2ray-plugin haproxy ipt2socks geoview"
-SAVED_BACKENDS=""
-for p in $BACKENDS; do
-  if opkg list-installed | awk '{print $1}' | grep -qx "$p"; then
-    SAVED_BACKENDS="$SAVED_BACKENDS $p"
-  fi
-done
-
-########################################
-# 2. 获取 GitHub 最新 release
-########################################
-echo_blue "获取 GitHub 最新 release..."
-fetch_latest_json() {
-  if command -v curl >/dev/null 2>&1; then
-    curl -s --connect-timeout 15 https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest
-  else
-    wget -qO- -T 15 -t 3 https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest
-  fi
-}
-
-latest_release="$(fetch_latest_json)"
-if [ -z "$latest_release" ]; then
-  echo_red "获取 GitHub Release 数据失败，请检查网络连通性。"
-  exit 1
-fi
-
-########################################
-# 3. 严格匹配 ipk（只取一个）
-########################################
-match_pkg() {
-  echo "$latest_release" | \
-    grep -o "\"browser_download_url\": \"[^\"]*${CHANNEL_PREFIX}_luci-${1}_[0-9.]\+\(-r[0-9]\+\)\?_all\.${PKG_EXT}\"" | \
-    sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/' | \
-    head -n 1
-}
-
-luci_app_passwall_url="$(match_pkg "app-passwall")"
-luci_i18n_passwall_url="$(match_pkg "i18n-passwall-zh-cn")"
-
-if [ -z "$luci_app_passwall_url" ] || [ -z "$luci_i18n_passwall_url" ]; then
-  echo_red "未找到匹配 ${CHANNEL_PREFIX} 的相关安装包。"
-  exit 1
-fi
-
-app_file="$(basename "$luci_app_passwall_url")"
-i18n_file="$(basename "$luci_i18n_passwall_url")"
-
-########################################
-# 4. 版本比对
-########################################
-version_new="$(echo "$app_file" | sed -E 's/.*_([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-installed_version="$(opkg list-installed | grep '^luci-app-passwall ' | awk '{print $3}' | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-installed_version="${installed_version:-无}"
-
-echo_blue "最新技术版本：$version_new"
-echo_blue "当前本地版本：$installed_version"
-
-if [ "$installed_version" = "$version_new" ]; then
-  echo_blue "技术版本一致，无需更新。"
-  exit 0
-fi
-
-########################################
-# 5. 用户确认
-########################################
-echo_orange "即将更新到 $version_new，继续？(y/n, 默认 y)"
-read -t 10 -r reply || true
-reply=${reply:-y}
-if [ "$reply" != "y" ]; then
-  echo_blue "已取消。"
-  exit 0
-fi
-
-########################################
-# 6. 下载新版本
-########################################
-echo_blue "下载 Passwall 包..."
-mkdir -p "$TEMP_DIR"
-wget -q -O "$TEMP_DIR/$app_file" -T 15 -t 3 "$luci_app_passwall_url" || { echo_red "主程序下载失败"; exit 1; }
-wget -q -O "$TEMP_DIR/$i18n_file" -T 15 -t 3 "$luci_i18n_passwall_url" || { echo_red "中文包下载失败"; exit 1; }
-
-########################################
-# 7. 备份自定义规则
-########################################
-echo_blue "备份自定义规则..."
-mkdir -p "$RULE_BACKUP"
-for f in direct_host direct_ip proxy_host; do
-  [ -f "$RULE_DIR/$f" ] && cp "$RULE_DIR/$f" "$RULE_BACKUP/$f"
-done
-
-########################################
-# 8. 停止 Passwall + 精准清理
-########################################
-echo_blue "停止 Passwall 并精准清理网络规则..."
-/etc/init.d/passwall stop 2>/dev/null || true
-sleep 2
-
-# 严禁使用 nft flush ruleset，仅精准删除 Passwall 专属的表
-for table in passwall passwall_chn passwall_geo passwall1; do
-  nft delete table inet "$table" 2>/dev/null || true
-done
-
-########################################
-# 9. 安装新版本
-########################################
-echo_blue "执行更新..."
-opkg install "$TEMP_DIR/$app_file" --force-overwrite --force-reinstall 2>&1 | \
-  grep -v "Not deleting modified conffile" || true
-
-opkg install "$TEMP_DIR/$i18n_file" --force-overwrite --force-reinstall 2>&1 | \
-  grep -v "Not deleting modified conffile" || true
-
-########################################
-# 10. 恢复自定义规则
-########################################
-echo_blue "恢复自定义规则..."
-for f in direct_host direct_ip proxy_host; do
-  [ -f "$RULE_BACKUP/$f" ] && cp "$RULE_BACKUP/$f" "$RULE_DIR/$f"
-done
-
-########################################
-# 11. 恢复缺失的后端组件
-########################################
-echo_blue "校验后端组件状态..."
-NEED_UPDATE=0
-for p in $SAVED_BACKENDS; do
-  if ! opkg list-installed | awk '{print $1}' | grep -qx "$p"; then
-    if [ "$NEED_UPDATE" -eq 0 ]; then
-      echo_blue "检测到后端丢失，正在刷新软件源索引..."
-      opkg update >/dev/null 2>&1
-      NEED_UPDATE=1
-    fi
-    echo_orange "重新安装：$p"
-    opkg install "$p" --force-overwrite
-  fi
-done
-
-########################################
-# 12. 状态刷新与服务重启
-########################################
-echo "$version_new" > "$PSVERSION_FILE"
-
-echo_blue "重载系统防火墙 (fw4)..."
-/etc/init.d/firewall restart >/dev/null 2>&1
-sleep 2
-
-echo_blue "启动 Passwall..."
-/etc/init.d/passwall restart 2>/dev/null || true
-
-echo_blue "重启 DNS 服务..."
-/etc/init.d/dnsmasq restart >/dev/null 2>&1 || true
-
-echo_blue "清理残留的网络连接跟踪 (Conntrack)..."
-if command -v conntrack >/dev/null 2>&1; then
-  conntrack -F >/dev/null 2>&1 || true
+echo "临时目录: $TMP"
+echo "== 公钥 =="
+if [ "$PKG_KIND" = "opkg" ]; then
+	fetch "$BASE/ipk.pub" "$TMP/ipk.pub" || exit 1
+	echo "ipk.pub $(wc -c < "$TMP/ipk.pub" | tr -d ' ') bytes"
 else
-  # 兼容新旧内核路径，并使用 () 放入子 Shell 彻底屏蔽重定向报错
-  (echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose) 2>/dev/null || true
-  (echo 1 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_loose) 2>/dev/null || true
+	fetch "$BASE/apk.pub" "$TMP/apk.pub" || exit 1
+	echo "apk.pub $(wc -c < "$TMP/apk.pub" | tr -d ' ') bytes"
+fi
+echo
+
+fail=0
+echo "== 索引 =="
+for feed in $FEEDS; do
+	if [ "$PKG_KIND" = "apk" ]; then
+		url="$FEED_ROOT/$feed/packages.adb"
+		dest="$TMP/${feed}.adb"
+		if fetch "$url" "$dest"; then
+			echo "[ok] $feed $(wc -c < "$dest" | tr -d ' ') bytes"
+			echo "     $url"
+			grep -a -o 'luci-app-passwall[0-9]*' "$dest" 2>/dev/null | sort -u | while read -r name; do
+				echo "     $name"
+			done
+		else
+			echo "[失败] $url"
+			fail=1
+		fi
+		continue
+	fi
+
+	url="$FEED_ROOT/$feed/Packages.gz"
+	dest="$TMP/${feed}.Packages.gz"
+	if ! fetch "$url" "$dest"; then
+		echo "[失败] $url"
+		fail=1
+		continue
+	fi
+	echo "[ok] $feed $(wc -c < "$dest" | tr -d ' ') bytes"
+	gzip -dc "$dest" | awk '
+		/^Package: / { pkg = $2; ver = "" }
+		/^Version: / { ver = $2 }
+		/^$/ {
+			if (pkg ~ /^(luci-app-passwall2?|xray-core|sing-box|chinadns-ng|hysteria)$/)
+				printf "     %s  %s\n", pkg, ver
+			pkg = ""
+		}
+		END {
+			if (pkg ~ /^(luci-app-passwall2?|xray-core|sing-box|chinadns-ng|hysteria)$/)
+				printf "     %s  %s\n", pkg, ver
+		}
+	'
+done
+echo
+
+is_installed() {
+	pkg="$1"
+	if [ "$PKG_KIND" = "apk" ]; then
+		apk info -e "$pkg" >/dev/null 2>&1
+	else
+		opkg list-installed "$pkg" 2>/dev/null | grep -q .
+	fi
+}
+
+opkg_ver() {
+	pkg="$1"
+	mode="$2"
+	if [ "$mode" = "installed" ]; then
+		opkg list-installed "$pkg" 2>/dev/null | awk -F ' - ' 'NR==1 { print $2 }'
+	else
+		opkg list "$pkg" 2>/dev/null | awk -F ' - ' 'NR==1 { print $2 }'
+	fi
+}
+
+apk_vers() {
+	pkg="$1"
+	apk list "$pkg" 2>/dev/null | while read -r line; do
+		case "$line" in
+			"$pkg"-*)
+				ver=${line#"$pkg-"}
+				ver=${ver%% *}
+				case "$line" in
+					*"[installed]"*) echo "installed $ver" ;;
+					*) echo "available $ver" ;;
+				esac
+				;;
+		esac
+	done
+}
+
+# 26.9.26-r1 高于 26.9.16-r1，也高于 26.9.1-r1。只按数字段比较。
+ver_gt() {
+	a=$(printf '%s' "$1" | sed 's/[^0-9][^0-9]*/./g; s/^\.//; s/\.$//')
+	b=$(printf '%s' "$2" | sed 's/[^0-9][^0-9]*/./g; s/^\.//; s/\.$//')
+	while [ -n "$a" ] || [ -n "$b" ]; do
+		aa=${a%%.*}
+		bb=${b%%.*}
+		[ -n "$aa" ] || aa=0
+		[ -n "$bb" ] || bb=0
+		if [ "$aa" -gt "$bb" ]; then
+			return 0
+		fi
+		if [ "$aa" -lt "$bb" ]; then
+			return 1
+		fi
+		case "$a" in
+			*.*) a=${a#*.} ;;
+			*) a="" ;;
+		esac
+		case "$b" in
+			*.*) b=${b#*.} ;;
+			*) b="" ;;
+		esac
+	done
+	return 1
+}
+
+newest_available() {
+	best=""
+	while read -r kind ver; do
+		[ "$kind" = "available" ] || continue
+		if [ -z "$best" ] || ver_gt "$ver" "$best"; then
+			best=$ver
+		fi
+	done << EOF
+$1
+EOF
+	printf '%s' "$best"
+}
+
+show_log() {
+	log="$1"
+	grep -v -E 'ERROR: wget: exited with error|WARNING: updating and opening|^ \[' "$log" || true
+	n=$(grep -c "unexpected end of file" "$log" 2>/dev/null || true)
+	if [ "${n:-0}" -gt 0 ]; then
+		echo "已忽略 ${n} 条无关镜像源错误"
+	fi
+}
+
+echo "== 配置软件源 =="
+if [ "$PKG_KIND" = "apk" ] && [ "$HAS_APK" -eq 1 ]; then
+	mkdir -p /etc/apk/keys /etc/apk/repositories.d
+	cp "$TMP/apk.pub" /etc/apk/keys/openwrt-passwall-build.pem
+	echo "公钥: /etc/apk/keys/openwrt-passwall-build.pem"
+	list=/etc/apk/repositories.d/customfeeds.list
+	touch "$list"
+	for feed in $FEEDS; do
+		line="$FEED_ROOT/$feed/packages.adb"
+		grep -qxF "$line" "$list" 2>/dev/null || echo "$line" >> "$list"
+		echo "$line"
+	done
+	echo "apk update"
+	apk update >"$TMP/update.log" 2>&1 || true
+	show_log "$TMP/update.log"
+	for feed in $FEEDS; do
+		url="$FEED_ROOT/$feed/packages.adb"
+		if grep -F "WARNING:" "$TMP/update.log" | grep -F "$url" >/dev/null 2>&1; then
+			echo "PassWall 软件源更新失败: $url"
+			fail=1
+		fi
+	done
+	if [ "$fail" -eq 0 ] && grep -F "WARNING:" "$TMP/update.log" >/dev/null 2>&1; then
+		echo "其他软件源的失败已忽略，PassWall 源可用。"
+	fi
+elif [ "$PKG_KIND" = "opkg" ] && [ "$HAS_OPKG" -eq 1 ]; then
+	opkg-key add "$TMP/ipk.pub"
+	echo "公钥已加入 opkg"
+	conf=/etc/opkg/customfeeds.conf
+	touch "$conf"
+	for feed in $FEEDS; do
+		line="src/gz $feed $FEED_ROOT/$feed"
+		grep -qxF "$line" "$conf" 2>/dev/null || echo "$line" >> "$conf"
+		echo "$line"
+	done
+	echo "opkg update"
+	opkg update >"$TMP/update.log" 2>&1 || true
+	show_log "$TMP/update.log"
+	for feed in $FEEDS; do
+		if grep -F "$FEED_ROOT/$feed" "$TMP/update.log" | grep -Ei "failed|error|wget" >/dev/null 2>&1; then
+			echo "PassWall 软件源更新失败: $FEED_ROOT/$feed"
+			fail=1
+		fi
+	done
+	if [ "$fail" -eq 0 ] && grep -Ei "failed|error|wget" "$TMP/update.log" >/dev/null 2>&1; then
+		echo "其他软件源的失败已忽略，PassWall 源可用。"
+	fi
+else
+	echo "本机没有 $PKG_KIND，只完成了环境判断，未安装。"
+	echo "临时目录将删除。"
+	exit "$fail"
 fi
 
-echo_blue "=== Passwall 热更新完成，网络已无缝恢复 ==="
-exit 0
-EOF
+if [ "$fail" -ne 0 ]; then
+	echo "软件源更新失败，未安装。"
+	exit "$fail"
+fi
+echo
+
+TARGETS=""
+if is_installed luci-app-passwall; then
+	TARGETS="$TARGETS luci-app-passwall"
+fi
+if is_installed luci-app-passwall2; then
+	TARGETS="$TARGETS luci-app-passwall2"
+fi
+if [ -z "$TARGETS" ]; then
+	TARGETS="luci-app-passwall"
+	echo "未安装 PassWall，将安装 luci-app-passwall"
+fi
+for core in xray-core sing-box chinadns-ng hysteria geoview; do
+	if is_installed "$core"; then
+		TARGETS="$TARGETS $core"
+	fi
+done
+
+echo "== 检查并安装 =="
+for pkg in $TARGETS; do
+	if [ "$PKG_KIND" = "apk" ]; then
+		installed_ver=""
+		available_ver=""
+		vers="$(apk_vers "$pkg")"
+		installed_ver=$(printf '%s\n' "$vers" | awk '$1=="installed" { print $2; exit }')
+		available_ver=$(newest_available "$vers")
+		if [ -z "$installed_ver" ] && ! is_installed "$pkg"; then
+			echo "安装 $pkg"
+			apk add --no-network "$pkg" >"$TMP/add.log" 2>&1 || fail=1
+			show_log "$TMP/add.log"
+		elif [ -n "$installed_ver" ] && [ -n "$available_ver" ] && ver_gt "$available_ver" "$installed_ver"; then
+			echo "更新 $pkg：$installed_ver -> $available_ver"
+			apk add --no-network -u "$pkg" >"$TMP/add.log" 2>&1 || fail=1
+			show_log "$TMP/add.log"
+		else
+			echo "已是软件源最新 $pkg ${installed_ver:-$available_ver}"
+		fi
+	else
+		if ! is_installed "$pkg"; then
+			echo "安装 $pkg"
+			opkg install "$pkg" || fail=1
+			continue
+		fi
+		inst="$(opkg_ver "$pkg" installed)"
+		echo "检查 $pkg 当前 ${inst:-未知}"
+		opkg upgrade "$pkg" || fail=1
+		now="$(opkg_ver "$pkg" installed)"
+		if [ "$now" != "$inst" ]; then
+			echo "更新 $pkg：$inst -> $now"
+		else
+			echo "已是最新 $pkg ${now:-未知}"
+		fi
+	fi
+done
+echo
+
+echo "== GitHub 发布包 =="
+echo "https://github.com/Openwrt-Passwall/openwrt-passwall/releases"
+want_release=0
+for pkg in $TARGETS; do
+	[ "$pkg" = "luci-app-passwall" ] && want_release=1
+done
+if [ "$want_release" -eq 0 ]; then
+	echo "未选择 luci-app-passwall，跳过发布页。"
+else
+	api="https://api.github.com/repos/Openwrt-Passwall/openwrt-passwall/releases/latest"
+	if has_cmd curl; then
+		curl -fsSL -A "passwall-feed" --retry 2 --connect-timeout 20 --max-time 60 -o "$TMP/release.json" "$api"
+	elif has_cmd wget; then
+		wget -q -O "$TMP/release.json" "$api"
+	fi
+	tag=$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP/release.json" 2>/dev/null | head -n 1)
+	if [ -z "$tag" ]; then
+		echo "读发布页失败，软件源结果保持不变。"
+	else
+		if [ "$PKG_KIND" = "apk" ]; then
+			mark="25.12%2B_luci-app-passwall"
+			i18nmark="25.12%2B_luci-i18n-passwall"
+			ext="apk"
+			vers="$(apk_vers luci-app-passwall)"
+			inst=$(printf '%s\n' "$vers" | awk '$1=="installed" { print $2; exit }')
+		elif [ "$SERIES" = "22.03" ] || [ "$SERIES" = "21.02" ]; then
+			mark="22.03-_luci-app-passwall"
+			i18nmark="22.03-_luci-i18n-passwall"
+			ext="ipk"
+			inst="$(opkg_ver luci-app-passwall installed)"
+		else
+			mark="23.05-24.10_luci-app-passwall"
+			i18nmark="23.05-24.10_luci-i18n-passwall"
+			ext="ipk"
+			inst="$(opkg_ver luci-app-passwall installed)"
+		fi
+		app_url=$(grep -o 'https://github.com[^" ]*' "$TMP/release.json" | grep '/releases/download/' | grep -F "$mark" | head -n 1)
+		i18n_url=$(grep -o 'https://github.com[^" ]*' "$TMP/release.json" | grep '/releases/download/' | grep -F "$i18nmark" | head -n 1)
+		echo "发布页 $tag，已安装 ${inst:-无}，附件前缀 $mark"
+		if [ -z "$app_url" ]; then
+			echo "发布页没有匹配的安装包。"
+			fail=1
+		elif [ -n "$inst" ] && ! ver_gt "$tag" "$inst"; then
+			echo "发布页不高于已安装版本，跳过。"
+		else
+			echo "下载发布包 $tag"
+			if fetch "$app_url" "$TMP/luci-app-passwall.$ext"; then
+				if [ "$PKG_KIND" = "apk" ]; then
+					apk add --allow-untrusted "$TMP/luci-app-passwall.$ext" >"$TMP/add.log" 2>&1 || fail=1
+				else
+					opkg install "$TMP/luci-app-passwall.$ext" >"$TMP/add.log" 2>&1 || fail=1
+				fi
+				show_log "$TMP/add.log"
+				if [ -n "$i18n_url" ] && fetch "$i18n_url" "$TMP/luci-i18n-passwall.$ext"; then
+					if [ "$PKG_KIND" = "apk" ]; then
+						apk add --allow-untrusted "$TMP/luci-i18n-passwall.$ext" >"$TMP/add.log" 2>&1 || true
+					else
+						opkg install "$TMP/luci-i18n-passwall.$ext" >"$TMP/add.log" 2>&1 || true
+					fi
+					show_log "$TMP/add.log"
+				fi
+			else
+				echo "下载发布包失败。"
+				fail=1
+			fi
+		fi
+	fi
+fi
+echo
+echo "临时目录将删除。"
+exit "$fail"
+EOF_PW
 
 
