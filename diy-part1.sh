@@ -184,7 +184,7 @@ EOOF
 
 cat>files/usr/share/Check_Update.sh<<-\EOF
 #!/bin/bash
-# https://github.com/Lenyu2020/Actions-OpenWrt-x86
+# https://github.com/mubinsy651/ActionsOpenWrtx86
 # Actions-OpenWrt-x86 By Lenyu 20210505
 #path=$(dirname $(readlink -f $0))
 # cd ${path}
@@ -198,16 +198,16 @@ fi
 rm -f /tmp/cloud_version
 # 获取固件云端版本号、内核版本号信息
 current_version=`cat /etc/lenyu_version`
-wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/Actions-OpenWrt-x86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
+wget -qO- -t1 -T2 "https://api.github.com/repos/mubinsy651/ActionsOpenWrtx86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
 if [ -s  "/tmp/cloud_ts_version" ]; then
 	cloud_version=`cat /tmp/cloud_ts_version | cut -d _ -f 1`
 	cloud_kernel=`cat /tmp/cloud_ts_version | cut -d _ -f 2`
 	#固件下载地址
 	new_version=`cat /tmp/cloud_ts_version`
-	DEV_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-	DEV_UEFI_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-	openwrt_dev=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev.md5
-	openwrt_dev_uefi=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev_uefi.md5
+	DEV_URL=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
+	DEV_UEFI_URL=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
+	openwrt_dev=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_dev.md5
+	openwrt_dev_uefi=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_dev_uefi.md5
 else
 	echo "请检测网络或重试！"
 	exit 1
@@ -326,7 +326,7 @@ EOF
 
 cat>files/usr/share/Lenyu-auto.sh<<-\EOF
 #!/bin/bash
-# https://github.com/Lenyu2020/Actions-OpenWrt-x86
+# https://github.com/mubinsy651/ActionsOpenWrtx86
 # Actions-OpenWrt-x86 By Lenyu 20210505
 #path=$(dirname $(readlink -f $0))
 # cd ${path}
@@ -347,16 +347,16 @@ cp -f /usr/bin/xray /etc/xray_backup/xray_backup
 
 # 获取固件云端版本号、内核版本号信息
 current_version=`cat /etc/lenyu_version`
-wget -qO- -t1 -T2 "https://api.github.com/repos/Lenyu2020/Actions-OpenWrt-x86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
+wget -qO- -t1 -T2 "https://api.github.com/repos/mubinsy651/ActionsOpenWrtx86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
 if [ -s  "/tmp/cloud_ts_version" ]; then
 	cloud_version=`cat /tmp/cloud_ts_version | cut -d _ -f 1`
 	cloud_kernel=`cat /tmp/cloud_ts_version | cut -d _ -f 2`
 	#固件下载地址
 	new_version=`cat /tmp/cloud_ts_version`
-	DEV_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
-	DEV_UEFI_URL=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
-	openwrt_dev=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev.md5
-	openwrt_dev_uefi=https://github.com/Lenyu2020/Actions-OpenWrt-x86/releases/download/${new_version}/openwrt_dev_uefi.md5
+	DEV_URL=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_x86-64-${new_version}_dev_Lenyu.img.gz
+	DEV_UEFI_URL=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_x86-64-${new_version}_uefi-gpt_dev_Lenyu.img.gz
+	openwrt_dev=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_dev.md5
+	openwrt_dev_uefi=https://github.com/mubinsy651/ActionsOpenWrtx86/releases/download/${new_version}/openwrt_dev_uefi.md5
 else
 	echo "请检测网络或重试！"
 	exit 1
@@ -402,6 +402,36 @@ fi
 
 exit 0
 EOF
+
+cat>files/usr/share/Lenyu-version.sh<<-\EOF
+#!/bin/bash
+# https://github.com/mubinsy651/ActionsOpenWrtx86
+# Actions-OpenWrt-x86 By Lenyu 20210505
+#path=$(dirname $(readlink -f $0))
+# cd ${path}
+#检测准备
+if [ ! -f  "/etc/lenyu_version" ]; then
+echo
+echo -e "\033[31m 该脚本在非Lenyu固件上运行，为避免不必要的麻烦，准备退出… \033[0m"
+echo
+exit 0
+fi
+rm -f /tmp/cloud_version
+# 获取固件云端版本号、内核版本号信息
+current_version=`cat /etc/lenyu_version`
+wget -qO- -t1 -T2 "https://api.github.com/repos/mubinsy651/ActionsOpenWrtx86/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g'  > /tmp/cloud_ts_version
+if [ -s  "/tmp/cloud_ts_version" ]; then
+cloud_version=`cat /tmp/cloud_ts_version | cut -d _ -f 1`
+fi
+exit 0
+EOF
+cat > package/base-files/files/etc/uci-defaults/99-argon <<EOF
+uci set argon.@global[0].primary='#5e72e4'
+uci set argon.@global[0].mode='normal'
+uci commit argon
+EOF
+
+
 
 cat>files/usr/share/Lenyu-pw.sh<<-\EOF
 #!/bin/sh
