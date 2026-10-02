@@ -1,4 +1,4 @@
-**English** | 中文
+**English** | 中文1
 
 # Actions-OpenWrt
 
